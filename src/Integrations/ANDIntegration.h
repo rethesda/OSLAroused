@@ -133,16 +133,14 @@ namespace Integrations
 
         // Base FormIDs for A.N.D. factions (before resolution)
         // These will be configured based on the actual A.N.D. mod structure
-        // For now, using placeholder values that will be updated when A.N.D. FormIDs are known
-        static constexpr uint32_t AND_MOD_FORM_BASE = 0x800; // Placeholder base
-        static constexpr uint32_t AND_NUDE_FACTION_ID = AND_MOD_FORM_BASE;
-        static constexpr uint32_t AND_TOPLESS_FACTION_ID = AND_MOD_FORM_BASE + 1;
-        static constexpr uint32_t AND_BOTTOMLESS_FACTION_ID = AND_MOD_FORM_BASE + 2;
-        static constexpr uint32_t AND_SHOWING_CHEST_FACTION_ID = AND_MOD_FORM_BASE + 3;
-        static constexpr uint32_t AND_SHOWING_ASS_FACTION_ID = AND_MOD_FORM_BASE + 4;
-        static constexpr uint32_t AND_SHOWING_GENITALS_FACTION_ID = AND_MOD_FORM_BASE + 5;
-        static constexpr uint32_t AND_SHOWING_BRA_FACTION_ID = AND_MOD_FORM_BASE + 6;
-        static constexpr uint32_t AND_SHOWING_UNDERWEAR_FACTION_ID = AND_MOD_FORM_BASE + 7;
+        static constexpr uint32_t AND_SHOWING_ASS_FACTION_ID = 0x82E;
+        static constexpr uint32_t AND_SHOWING_CHEST_FACTION_ID = 0x82F;
+        static constexpr uint32_t AND_SHOWING_GENITALS_FACTION_ID = 0x830;
+        static constexpr uint32_t AND_NUDE_FACTION_ID = 0x831;
+        static constexpr uint32_t AND_TOPLESS_FACTION_ID = 0x832;
+        static constexpr uint32_t AND_BOTTOMLESS_FACTION_ID = 0x833;
+        static constexpr uint32_t AND_SHOWING_BRA_FACTION_ID = 0x834;
+        static constexpr uint32_t AND_SHOWING_UNDERWEAR_FACTION_ID = 0x835;
 
         // Baseline contribution values for each nudity state
         static constexpr float NUDE_BASELINE = 50.0f;

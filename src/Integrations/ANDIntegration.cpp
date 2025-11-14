@@ -16,12 +16,10 @@ namespace Integrations
         }
 
         // Look for A.N.D. mod in load order
-        // TODO: Update with actual A.N.D. plugin name when known
-        const char* andModName = "AdvancedNudityDetection.esp";
+        const char* andModName = "Advanced Nudity Detection.esp";
         const auto andMod = dataHandler->LookupModByName(andModName);
-
         if (!andMod) {
-            logger::info("A.N.D. mod not found in load order, integration disabled");
+            logger::info("{} mod not found in load order, integration disabled", andModName);
             m_IsAvailable = false;
             return false;
         }
@@ -29,25 +27,21 @@ namespace Integrations
         m_ANDModIndex = andMod->GetPartialIndex();
         logger::info("Found A.N.D. mod with index: {:04X}", m_ANDModIndex);
 
-        // Resolve faction FormIDs
-        auto ResolveFormId = [this, dataHandler, andModName](uint32_t baseFormId) -> RE::TESForm* {
-            RE::FormID formId = (static_cast<RE::FormID>(m_ANDModIndex) << 24) | (baseFormId & 0xFFFFFF);
-            return dataHandler->LookupForm(formId, andModName);
-        };
-
         // Resolve all A.N.D. factions
         auto ResolveAndCastFaction = [&](uint32_t baseId, const char* name) -> RE::TESFaction* {
-            auto* form = ResolveFormId(baseId);
-            if (!form) {
+            RE::FormID formId = Utilities::Forms::ResolveFormId(m_ANDModIndex, baseId);
+            if (!formId) {
                 logger::warn("Failed to resolve A.N.D. faction: {} (0x{:08X})", name, baseId);
                 return nullptr;
             }
-            auto* faction = form->As<RE::TESFaction>();
-            if (!faction) {
-                logger::warn("Form is not a faction: {} (0x{:08X})", name, baseId);
+            
+            RE::TESFaction* faction = RE::TESForm::LookupByID<RE::TESFaction>(formId); 
+            if(!faction) {
+                logger::warn("Resolved A.N.D. faction is not a TESFaction: {} (0x{:08X})", name, formId);
                 return nullptr;
             }
-            logger::debug("Resolved A.N.D. faction: {} -> 0x{:08X}", name, faction->formID);
+            logger::debug("Resolved A.N.D. faction: {} -> 0x{:08X}", name, formId);
+
             return faction;
         };
 
@@ -101,6 +95,7 @@ namespace Integrations
         auto CheckFaction = [&](RE::TESFaction* faction) -> bool {
             return faction && actor->IsInFaction(faction);
         };
+
 
         state.isNude = CheckFaction(m_ANDNudeFaction);
         state.isTopless = CheckFaction(m_ANDToplessFaction);
