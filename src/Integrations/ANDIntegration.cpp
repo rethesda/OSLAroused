@@ -192,14 +192,11 @@ namespace Integrations
             andScore = GetANDNudityScore(actor);
         }
 
-        // If we have an A.N.D. score, apply the multiplier and return
+        // If we have an A.N.D. score, return it directly
         if (andScore > 0.0f) {
-            float multiplier = settings->GetANDNudityMultiplier();
-            float modifier = andScore * multiplier;
-
-            logger::debug("Actor {:08X} using A.N.D. nudity modifier: {} (score:{} * mult:{})",
-                         actor->formID, modifier, andScore, multiplier);
-            return modifier;
+            logger::debug("Actor {:08X} using A.N.D. nudity modifier: {}",
+                         actor->formID, andScore);
+            return andScore;
         }
 
         // Fall back to legacy nudity detection

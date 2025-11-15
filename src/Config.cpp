@@ -38,9 +38,6 @@ bool Config::LoadINI(std::string fileName)
     const char *useANDStr = ini.GetValue("ANDIntegration", "UseANDIntegration", "1");
     Settings::GetSingleton()->SetUseANDIntegration(std::stoi(useANDStr) != 0);
 
-    const char *andMultiplierStr = ini.GetValue("ANDIntegration", "NudityMultiplier", "0.6");
-    Settings::GetSingleton()->SetANDNudityMultiplier(std::stof(andMultiplierStr));
-
     // Get the log level from the System section
     const char *logLevelStr = ini.GetValue("System", "LogLevel", "0");
     m_LogLevel = std::stoi(logLevelStr);

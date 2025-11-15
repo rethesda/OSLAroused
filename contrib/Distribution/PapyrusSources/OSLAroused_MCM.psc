@@ -60,7 +60,6 @@ int EnableSOSIntegrationOid
 
 ;---- Integration Settings Properties ----
 int EnableANDIntegrationOid
-int ANDMultiplierOid
 int ANDNudeOid
 int ANDToplessOid
 int ANDBottomlessOid
@@ -459,14 +458,10 @@ function BaselineStatusPage()
     if(andEnabled)
         ; Get AND nudity score for the actor
         float andScore = OSLArousedNative.GetANDNudityScore(PuppetActor)
-        float andMultiplier = OSLArousedNativeConfig.GetANDNudityMultiplier()
-        float andContribution = andScore * andMultiplier
 
         ; Show AND nudity information
         AddHeaderOption("Advanced Nudity Detection")
         AddTextOption("AND Score", andScore as int)
-        AddTextOption("AND Multiplier", OSLArousedNativeConfig.RoundFloat(andMultiplier, 2))
-        AddTextOption("AND Contribution", andContribution as int)
 
         ; Get and display individual faction contributions
         float[] factionContributions = OSLArousedNative.GetANDFactionContributions(PuppetActor)
@@ -589,14 +584,6 @@ function IntegrationSettingsPage()
     EnableANDIntegrationOid = AddToggleOption("Enable A.N.D. Integration", andEnabled)
 
     if(andEnabled)
-        AddEmptyOption()
-
-        ; Multiplier setting (simple mode)
-        float currentMultiplier = OSLArousedNativeConfig.GetANDNudityMultiplier()
-        ANDMultiplierOid = AddSliderOption("A.N.D. Arousal Multiplier", currentMultiplier, "{2}")
-
-        AddTextOption("Multiplier Info", "Scales all A.N.D. values", OPTION_FLAG_DISABLED)
-
         ; Individual faction baseline settings
         AddEmptyOption()
         AddHeaderOption("Individual Faction Baselines")
@@ -1064,12 +1051,7 @@ event OnOptionSliderOpen(int option)
             SetSliderDialogRange(0, 50)
         endif
     elseif(currentPage == "$OSL_IntegrationSettings")
-        if(option == ANDMultiplierOid)
-            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDNudityMultiplier())
-            SetSliderDialogDefaultValue(1.0)
-            SetSliderDialogRange(0.0, 2.0)
-            SetSliderDialogInterval(0.1)
-        elseif(option == ANDNudeOid)
+        if(option == ANDNudeOid)
             SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(0))
             SetSliderDialogDefaultValue(50.0)
             SetSliderDialogRange(0, 100)
@@ -1195,10 +1177,7 @@ event OnOptionSliderAccept(int option, float value)
             SetSliderOptionValue(LibidoRateOfChangeOid, value, "{1}")
         endif
     elseif(currentPage == "$OSL_IntegrationSettings")
-        if(option == ANDMultiplierOid)
-            OSLArousedNativeConfig.SetANDNudityMultiplier(value)
-            SetSliderOptionValue(ANDMultiplierOid, value, "{2}")
-        elseif(option == ANDNudeOid)
+        if(option == ANDNudeOid)
             OSLArousedNativeConfig.SetANDFactionBaseline(0, value)
             SetSliderOptionValue(ANDNudeOid, value, "{1}")
         elseif(option == ANDToplessOid)

@@ -78,19 +78,6 @@ bool PapyrusConfig::GetUseANDIntegration(RE::StaticFunctionTag*)
 	return result;
 }
 
-void PapyrusConfig::SetANDNudityMultiplier(RE::StaticFunctionTag*, float multiplier)
-{
-	logger::trace("SetANDNudityMultiplier: {}", multiplier);
-	Settings::GetSingleton()->SetANDNudityMultiplier(multiplier);
-}
-
-float PapyrusConfig::GetANDNudityMultiplier(RE::StaticFunctionTag*)
-{
-	float result = Settings::GetSingleton()->GetANDNudityMultiplier();
-	logger::trace("GetANDNudityMultiplier: {}", result);
-	return result;
-}
-
 bool PapyrusConfig::IsANDIntegrationEnabled(RE::StaticFunctionTag*)
 {
 	bool result = Integrations::ANDIntegration::GetSingleton()->IsAvailable() && Settings::GetSingleton()->GetUseANDIntegration();
@@ -269,8 +256,6 @@ bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 	// Register A.N.D. Integration functions
 	vm->RegisterFunction("SetUseANDIntegration", "OSLArousedNativeConfig", SetUseANDIntegration);
 	vm->RegisterFunction("GetUseANDIntegration", "OSLArousedNativeConfig", GetUseANDIntegration);
-	vm->RegisterFunction("SetANDNudityMultiplier", "OSLArousedNativeConfig", SetANDNudityMultiplier);
-	vm->RegisterFunction("GetANDNudityMultiplier", "OSLArousedNativeConfig", GetANDNudityMultiplier);
 	vm->RegisterFunction("IsANDIntegrationEnabled", "OSLArousedNativeConfig", IsANDIntegrationEnabled);
 	vm->RegisterFunction("SetANDFactionBaseline", "OSLArousedNativeConfig", SetANDFactionBaseline);
 	vm->RegisterFunction("GetANDFactionBaseline", "OSLArousedNativeConfig", GetANDFactionBaseline);

@@ -206,17 +206,6 @@ public:
 		return m_UseANDIntegration;
 	}
 
-	void SetANDNudityMultiplier(float newVal)
-	{
-		Locker locker(m_Lock);
-		m_ANDNudityMultiplier = std::clamp(newVal, 0.0f, 2.0f);
-	}
-	float GetANDNudityMultiplier() const
-	{
-		Locker locker(m_Lock);
-		return m_ANDNudityMultiplier;
-	}
-
 	// A.N.D. Individual faction baseline values
 	struct ANDFactionBaselines {
 		float Nude = 50.0f;
@@ -328,7 +317,6 @@ private:
 
 	// A.N.D. Integration settings
 	bool m_UseANDIntegration = true;  // Default true if A.N.D. is present
-	float m_ANDNudityMultiplier = 1.0f;  // Default multiplier (50 * 1 = 30 baseline)
 	ANDFactionBaselines m_ANDFactionBaselines;  // Individual faction baseline values
 
 	//SLA property

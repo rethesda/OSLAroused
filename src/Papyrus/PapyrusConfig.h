@@ -18,8 +18,6 @@ namespace PapyrusConfig
 	// A.N.D. Integration functions
 	void SetUseANDIntegration(RE::StaticFunctionTag* base, bool enabled);
 	bool GetUseANDIntegration(RE::StaticFunctionTag* base);
-	void SetANDNudityMultiplier(RE::StaticFunctionTag* base, float multiplier);
-	float GetANDNudityMultiplier(RE::StaticFunctionTag* base);
 	bool IsANDIntegrationEnabled(RE::StaticFunctionTag* base);
 	void SetANDFactionBaseline(RE::StaticFunctionTag* base, int factionIndex, float value);
 	float GetANDFactionBaseline(RE::StaticFunctionTag* base, int factionIndex);
