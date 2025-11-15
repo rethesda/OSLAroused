@@ -450,13 +450,12 @@ function BaselineStatusPage()
         ; Show AND nudity information
         AddHeaderOption("Advanced Nudity Detection")
         AddTextOption("AND Score", andScore as int)
-        AddTextOption("AND Multiplier", andMultiplier)
+        AddTextOption("AND Multiplier", OSLArousedNativeConfig.RoundFloat(andMultiplier, 2))
         AddTextOption("AND Contribution", andContribution as int)
 
         ; Get and display individual faction contributions
         float[] factionContributions = OSLArousedNative.GetANDFactionContributions(PuppetActor)
         if(factionContributions.Length >= 8)
-            AddEmptyOption()
             AddHeaderOption("AND Faction Contributions")
 
             ; Display each faction contribution value

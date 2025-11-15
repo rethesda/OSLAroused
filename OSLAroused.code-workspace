@@ -9,7 +9,8 @@
         "papyrus.fallout4.enabled": false,
         "papyrus.skyrim.enabled": false,
         "files.associations": {
-            "utility": "cpp"
+            "utility": "cpp",
+            "iomanip": "cpp"
         }
     }
 }

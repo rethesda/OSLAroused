@@ -47,3 +47,6 @@ bool function GetUseANDIntegration() global native
 function SetANDNudityMultiplier(float multiplier) global native
 float function GetANDNudityMultiplier() global native
 bool function IsANDIntegrationEnabled() global native
+
+; Utilities
+String function RoundFloat(float value, int decimals) global native

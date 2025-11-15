@@ -223,6 +223,22 @@ float PapyrusConfig::GetUpdateIntervalRealTimeSeconds(RE::StaticFunctionTag* bas
 	return Utilities::GameTimeToRealSeconds(Settings::GetSingleton()->GetArousalUpdateInterval());
 }
 
+RE::BSFixedString PapyrusConfig::RoundFloat(RE::StaticFunctionTag* base, float value, int decimals)
+{
+	// Clamp decimals to something sane
+ 	if (decimals < 0) {
+		decimals = 0;
+	} else if (decimals > 6) {
+		decimals = 6;
+	}
+
+	std::stringstream ss;
+	ss << std::fixed << std::setprecision(decimals) << value;
+
+	// Convert std::string → BSFixedString
+	return RE::BSFixedString(ss.str());
+}
+
 bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 {
 	vm->RegisterFunction("SetMinLibidoValue", "OSLArousedNativeConfig", SetMinLibidoValue);
@@ -256,5 +272,6 @@ bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 
 	vm->RegisterFunction("GetUpdateIntervalRealTimeSeconds", "OSLArousedNativeConfig", GetUpdateIntervalRealTimeSeconds);
 	
+	vm->RegisterFunction("RoundFloat", "OSLArousedNativeConfig", RoundFloat);
 	return true;
 }

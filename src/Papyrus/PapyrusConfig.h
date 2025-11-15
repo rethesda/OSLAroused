@@ -35,5 +35,8 @@ namespace PapyrusConfig
 
 	float GetUpdateIntervalRealTimeSeconds(RE::StaticFunctionTag* base);
 
+	// Utilities
+	RE::BSFixedString RoundFloat(RE::StaticFunctionTag* base, float value, int decimals);
+
 	bool RegisterFunctions(RE::BSScript::IVirtualMachine* vm);
 }
