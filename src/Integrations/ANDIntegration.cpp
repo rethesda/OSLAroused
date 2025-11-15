@@ -93,9 +93,13 @@ namespace Integrations
 
         state.isNude = CheckFaction(m_ANDNudeFaction);
 
+        // Get configurable baseline values from Settings
+        const auto settings = Settings::GetSingleton();
+        auto baselines = settings->GetANDFactionBaselines();
+
         // Step 1: Hard override for Nude
         if (state.isNude) {
-            state.calculatedScore = NUDE_BASELINE;  // 50.0f
+            state.calculatedScore = baselines.Nude;
             logger::debug("Actor {:08X} is nude, score: {}", actor->formID, state.calculatedScore);
             return state;
         }
@@ -108,7 +112,7 @@ namespace Integrations
         state.isShowingBra = CheckFaction(m_ANDShowingBraFaction);
         state.isShowingUnderwear = CheckFaction(m_ANDShowingUnderwearFaction);
 
-        
+
         logger::debug("Actor {:08X} A.N.D. Nudity State - Nude: {}, Topless: {}, Bottomless: {}, ShowingChest: {}, ShowingAss: {}, ShowingGenitals: {}, ShowingBra: {}, ShowingUnderwear: {}",
                      actor->formID,
                      state.isNude,
@@ -123,21 +127,21 @@ namespace Integrations
         // Step 2: Chest region (priority: Topless > ShowingChest > ShowingBra)
         float chestScore = 0.0f;
         if (state.isTopless) {
-            chestScore = TOPLESS_BASELINE;  // 20.0f
+            chestScore = baselines.Topless;
         } else if (state.isShowingChest) {
-            chestScore = SHOWING_CHEST_BASELINE;  // 12.0f
+            chestScore = baselines.ShowingChest;
         } else if (state.isShowingBra) {
-            chestScore = SHOWING_BRA_BASELINE;  // 8.0f
+            chestScore = baselines.ShowingBra;
         }
 
         // Step 3: Front bottom region (priority: Bottomless > ShowingGenitals > ShowingUnderwear)
         float frontScore = 0.0f;
         if (state.isBottomless) {
-            frontScore = BOTTOMLESS_BASELINE;  // 30.0f
+            frontScore = baselines.Bottomless;
         } else if (state.isShowingGenitals) {
-            frontScore = SHOWING_GENITALS_BASELINE;  // 15.0f
+            frontScore = baselines.ShowingGenitals;
         } else if (state.isShowingUnderwear) {
-            frontScore = SHOWING_UNDERWEAR_BASELINE;  // 8.0f
+            frontScore = baselines.ShowingUnderwear;
         }
 
         // Step 4: Back bottom / ass region
@@ -145,7 +149,7 @@ namespace Integrations
         if (state.isBottomless) {
             assScore = 0.0f;  // Already covered by bottomless
         } else if (state.isShowingAss) {
-            assScore = SHOWING_ASS_BASELINE;  // 8.0f
+            assScore = baselines.ShowingAss;
         }
 
         // Step 5: Calculate base score
@@ -154,13 +158,16 @@ namespace Integrations
         // Step 6: Special synergy case
         // If Topless and Bottomless are both true but Nude is false
         if (state.isTopless && state.isBottomless && !state.isNude) {
-            baseScore = TOPLESS_BOTTOMLESS_SYNERGY;  // 37.0f
+            // Use a synergy bonus that's proportional to the configured values
+            baseScore = (baselines.Topless + baselines.Bottomless) * 0.74f;
             logger::debug("Actor {:08X} has topless+bottomless synergy, score: {}",
                          actor->formID, baseScore);
         }
 
-        // Step 7: Clamp to valid range [0, 50]
-        state.calculatedScore = std::clamp(baseScore, 0.0f, 50.0f);
+        // Step 7: Clamp to valid range [0, 100] (using max configured value)
+        float maxValue = std::max({baselines.Nude, baselines.Topless + baselines.Bottomless,
+                                   baselines.ShowingChest + baselines.ShowingGenitals + baselines.ShowingAss});
+        state.calculatedScore = std::clamp(baseScore, 0.0f, maxValue);
 
         logger::debug("Actor {:08X} nudity score: {} (chest:{}, front:{}, ass:{})",
                      actor->formID, state.calculatedScore, chestScore, frontScore, assScore);
@@ -232,6 +239,10 @@ namespace Integrations
         // Get the nudity state
         ANDNudityState nudityState = FetchActorNudityState(actor);
 
+        // Get configurable baseline values from Settings
+        const auto settings = Settings::GetSingleton();
+        auto baselines = settings->GetANDFactionBaselines();
+
         // Initialize all contributions to 0
         contributions.reserve(8);
         float nudeContrib = 0.0f;
@@ -246,44 +257,50 @@ namespace Integrations
         // Calculate actual contributions based on priority rules
         // Step 1: Hard override for Nude
         if (nudityState.isNude) {
-            nudeContrib = NUDE_BASELINE;  // 50.0f
+            nudeContrib = baselines.Nude;
             // When nude, all other contributions are 0
         } else {
             // Step 2: Chest region (priority: Topless > ShowingChest > ShowingBra)
             if (nudityState.isTopless) {
-                toplessContrib = TOPLESS_BASELINE;  // 20.0f
+                toplessContrib = baselines.Topless;
                 // ShowingChest and ShowingBra are overridden by Topless
             } else if (nudityState.isShowingChest) {
-                chestContrib = SHOWING_CHEST_BASELINE;  // 12.0f
+                chestContrib = baselines.ShowingChest;
                 // ShowingBra is overridden by ShowingChest
             } else if (nudityState.isShowingBra) {
-                braContrib = SHOWING_BRA_BASELINE;  // 8.0f
+                braContrib = baselines.ShowingBra;
             }
 
             // Step 3: Front bottom region (priority: Bottomless > ShowingGenitals > ShowingUnderwear)
             if (nudityState.isBottomless) {
-                bottomlessContrib = BOTTOMLESS_BASELINE;  // 30.0f
+                bottomlessContrib = baselines.Bottomless;
                 // ShowingGenitals and ShowingUnderwear are overridden by Bottomless
             } else if (nudityState.isShowingGenitals) {
-                genitalsContrib = SHOWING_GENITALS_BASELINE;  // 15.0f
+                genitalsContrib = baselines.ShowingGenitals;
                 // ShowingUnderwear is overridden by ShowingGenitals
             } else if (nudityState.isShowingUnderwear) {
-                underwearContrib = SHOWING_UNDERWEAR_BASELINE;  // 8.0f
+                underwearContrib = baselines.ShowingUnderwear;
             }
 
             // Step 4: Back bottom / ass region
             if (!nudityState.isBottomless && nudityState.isShowingAss) {
                 // ShowingAss only contributes if not Bottomless
-                assContrib = SHOWING_ASS_BASELINE;  // 8.0f
+                assContrib = baselines.ShowingAss;
             }
 
             // Step 5: Special synergy case
             // If Topless and Bottomless are both true but Nude is false, override individual contributions
             if (nudityState.isTopless && nudityState.isBottomless) {
-                // Clear individual contributions and set the synergy value
-                // We'll distribute this across topless and bottomless proportionally
-                toplessContrib = 15.0f;  // Part of the 37 synergy
-                bottomlessContrib = 22.0f;  // Part of the 37 synergy
+                // Use a synergy bonus that's proportional to the configured values
+                // Default was 37 when topless=20 and bottomless=30 (total 50 -> 37)
+                // So we'll use 74% of the sum as the synergy value
+                float synergy = (baselines.Topless + baselines.Bottomless) * 0.74f;
+
+                // Distribute proportionally
+                float toplessRatio = baselines.Topless / (baselines.Topless + baselines.Bottomless);
+                toplessContrib = synergy * toplessRatio;
+                bottomlessContrib = synergy * (1.0f - toplessRatio);
+
                 // Clear other contributions that would be redundant
                 chestContrib = 0.0f;
                 assContrib = 0.0f;

@@ -217,6 +217,62 @@ public:
 		return m_ANDNudityMultiplier;
 	}
 
+	// A.N.D. Individual faction baseline values
+	struct ANDFactionBaselines {
+		float Nude = 50.0f;
+		float Topless = 20.0f;
+		float Bottomless = 30.0f;
+		float ShowingChest = 12.0f;
+		float ShowingAss = 8.0f;
+		float ShowingGenitals = 15.0f;
+		float ShowingBra = 8.0f;
+		float ShowingUnderwear = 8.0f;
+	};
+
+	void SetANDFactionBaselines(const ANDFactionBaselines& baselines)
+	{
+		Locker locker(m_Lock);
+		m_ANDFactionBaselines = baselines;
+	}
+
+	ANDFactionBaselines GetANDFactionBaselines() const
+	{
+		Locker locker(m_Lock);
+		return m_ANDFactionBaselines;
+	}
+
+	void SetANDFactionBaseline(int index, float value)
+	{
+		Locker locker(m_Lock);
+		value = std::clamp(value, 0.0f, 100.0f);
+		switch (index) {
+		case 0: m_ANDFactionBaselines.Nude = value; break;
+		case 1: m_ANDFactionBaselines.Topless = value; break;
+		case 2: m_ANDFactionBaselines.Bottomless = value; break;
+		case 3: m_ANDFactionBaselines.ShowingChest = value; break;
+		case 4: m_ANDFactionBaselines.ShowingAss = value; break;
+		case 5: m_ANDFactionBaselines.ShowingGenitals = value; break;
+		case 6: m_ANDFactionBaselines.ShowingBra = value; break;
+		case 7: m_ANDFactionBaselines.ShowingUnderwear = value; break;
+		}
+	}
+
+	float GetANDFactionBaseline(int index) const
+	{
+		Locker locker(m_Lock);
+		switch (index) {
+		case 0: return m_ANDFactionBaselines.Nude;
+		case 1: return m_ANDFactionBaselines.Topless;
+		case 2: return m_ANDFactionBaselines.Bottomless;
+		case 3: return m_ANDFactionBaselines.ShowingChest;
+		case 4: return m_ANDFactionBaselines.ShowingAss;
+		case 5: return m_ANDFactionBaselines.ShowingGenitals;
+		case 6: return m_ANDFactionBaselines.ShowingBra;
+		case 7: return m_ANDFactionBaselines.ShowingUnderwear;
+		default: return 0.0f;
+		}
+	}
+
 	float GetTimeRateHalfLife() const
 	{
 		Locker locker(m_Lock);
@@ -273,6 +329,7 @@ private:
 	// A.N.D. Integration settings
 	bool m_UseANDIntegration = true;  // Default true if A.N.D. is present
 	float m_ANDNudityMultiplier = 1.0f;  // Default multiplier (50 * 1 = 30 baseline)
+	ANDFactionBaselines m_ANDFactionBaselines;  // Individual faction baseline values
 
 	//SLA property
 	float m_TimeRateHalfLife = 2.f;

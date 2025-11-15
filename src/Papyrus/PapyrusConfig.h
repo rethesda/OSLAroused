@@ -21,6 +21,8 @@ namespace PapyrusConfig
 	void SetANDNudityMultiplier(RE::StaticFunctionTag* base, float multiplier);
 	float GetANDNudityMultiplier(RE::StaticFunctionTag* base);
 	bool IsANDIntegrationEnabled(RE::StaticFunctionTag* base);
+	void SetANDFactionBaseline(RE::StaticFunctionTag* base, int factionIndex, float value);
+	float GetANDFactionBaseline(RE::StaticFunctionTag* base, int factionIndex);
 
 	void SetDeviceTypesBaseline1(RE::StaticFunctionTag* base, float belt, float collar, float legCuffs, float armCuffs, float bra, float gag, float p1, float p2, float blindfold, float harness);
 	void SetDeviceTypesBaseline2(RE::StaticFunctionTag* base, float plugVag, float plugAnal, float corset, float boots, float gloves, float hood, float suit, float heavyBondage, float bondageMittens);

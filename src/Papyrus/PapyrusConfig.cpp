@@ -97,6 +97,19 @@ bool PapyrusConfig::IsANDIntegrationEnabled(RE::StaticFunctionTag*)
 	return result;
 }
 
+void PapyrusConfig::SetANDFactionBaseline(RE::StaticFunctionTag*, int factionIndex, float value)
+{
+	logger::trace("SetANDFactionBaseline: index={}, value={}", factionIndex, value);
+	Settings::GetSingleton()->SetANDFactionBaseline(factionIndex, value);
+}
+
+float PapyrusConfig::GetANDFactionBaseline(RE::StaticFunctionTag*, int factionIndex)
+{
+	float result = Settings::GetSingleton()->GetANDFactionBaseline(factionIndex);
+	logger::trace("GetANDFactionBaseline: index={}, result={}", factionIndex, result);
+	return result;
+}
+
 void PapyrusConfig::SetDeviceTypesBaseline1(RE::StaticFunctionTag*, float belt, float collar, float legCuffs, float armCuffs, float bra, float gag, float piercingsNipple, float piercingsVaginal, float blindfold, float harness)
 {
 	DeviceArousalBaselineChange arousalBaselineConfig = Settings::GetSingleton()->GetDeviceBaseline();
@@ -259,6 +272,8 @@ bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 	vm->RegisterFunction("SetANDNudityMultiplier", "OSLArousedNativeConfig", SetANDNudityMultiplier);
 	vm->RegisterFunction("GetANDNudityMultiplier", "OSLArousedNativeConfig", GetANDNudityMultiplier);
 	vm->RegisterFunction("IsANDIntegrationEnabled", "OSLArousedNativeConfig", IsANDIntegrationEnabled);
+	vm->RegisterFunction("SetANDFactionBaseline", "OSLArousedNativeConfig", SetANDFactionBaseline);
+	vm->RegisterFunction("GetANDFactionBaseline", "OSLArousedNativeConfig", GetANDFactionBaseline);
 
 	vm->RegisterFunction("SetDeviceTypesBaseline1", "OSLArousedNativeConfig", SetDeviceTypesBaseline1);
 	vm->RegisterFunction("SetDeviceTypesBaseline2", "OSLArousedNativeConfig", SetDeviceTypesBaseline2);
