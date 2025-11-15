@@ -228,6 +228,16 @@ float PapyrusInterface::GetANDNudityScore(RE::StaticFunctionTag*, RE::Actor* act
     return Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(actorRef);
 }
 
+std::vector<bool> PapyrusInterface::GetANDFactionStates(RE::StaticFunctionTag*, RE::Actor* actorRef)
+{
+	if (!actorRef) {
+		Utilities::logInvalidArgsVerbose(__FUNCTION__);
+		return {};
+	}
+
+	return Integrations::ANDIntegration::GetSingleton()->GetANDNudityMultiplier(actorRef);
+}
+
 bool PapyrusInterface::IsActorExhibitionist(RE::StaticFunctionTag* base, RE::Actor* actorRef)
 {
 	if (!actorRef) {

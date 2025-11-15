@@ -41,6 +41,7 @@ namespace PapyrusInterface
 
 	// A.N.D. Integration debug function
 	float GetANDNudityScore(RE::StaticFunctionTag* base, RE::Actor* actorRef);
+	std::vector<bool> GetANDFactionStates(RE::StaticFunctionTag* base, RE::Actor* actorRef);
 
 	bool IsActorExhibitionist(RE::StaticFunctionTag* base, RE::Actor* actorRef);
 	void SetActorExhibitionist(RE::StaticFunctionTag* base, RE::Actor* actorRef, bool exhibitionist);

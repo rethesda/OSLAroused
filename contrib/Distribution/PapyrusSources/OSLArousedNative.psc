@@ -125,3 +125,6 @@ bool function IsInScene(Actor actor) global native
 bool function IsViewingScene(Actor actor) global native
 bool function IsWearingEroticArmor(Actor actor) global native
 float function WornDeviceBaselineGain(Actor actor) global native
+
+;Gets the A.N.D. (Advanced Nudity Detection) nudity score for an actor (0-50)
+float function GetANDNudityScore(Actor actor) global native

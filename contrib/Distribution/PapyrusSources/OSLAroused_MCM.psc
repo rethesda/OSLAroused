@@ -401,17 +401,26 @@ function BaselineStatusPage()
         return
     endif
     AddHeaderOption("$OSL_BaselineContributions")
-    if(OSLArousedNative.IsNaked(PuppetActor))
-        AddTextOption("$OSL_Nude", Main.NudityBaselineIncrease)
-        AddTextOption("$OSL_ViewingNude", "0")
-    elseif (OSLArousedNative.IsViewingNaked(PuppetActor))
-        AddTextOption("$OSL_Nude", "0")
+
+    ; Check if AND integration is available and enabled
+    bool andEnabled = OSLArousedNativeConfig.IsANDIntegrationEnabled()
+    if(!andEnabled)
+        ; Use legacy nudity detection if AND is not available or disabled
+        if(OSLArousedNative.IsNaked(PuppetActor))
+            AddTextOption("$OSL_Nude", Main.NudityBaselineIncrease)
+        else
+            AddTextOption("$OSL_Nude", "0")
+        endif
+    endif
+
+    if(OSLArousedNative.IsViewingNaked(PuppetActor))
         AddTextOption("$OSL_ViewingNude", Main.ViewingNudityBaselineIncrease)
     else
-        AddTextOption("$OSL_Nude", "0")
         AddTextOption("$OSL_ViewingNude", "0")
     endif
 
+    AddEmptyOption()
+    AddHeaderOption("$OSL_SceneContributions")
     if(OSLArousedNative.IsInScene(PuppetActor))
         AddTextOption("$OSL_Participating", Main.SceneParticipationBaselineIncrease)
         AddTextOption("$OSL_Spectating", "0")
@@ -432,6 +441,47 @@ function BaselineStatusPage()
     AddTextOption("$OSL_WornDevicesGain", OSLArousedNative.WornDeviceBaselineGain(PuppetActor))
 
     SetCursorPosition(1)
+    if(andEnabled)
+        ; Get AND nudity score for the actor
+        float andScore = OSLArousedNative.GetANDNudityScore(PuppetActor)
+        float andMultiplier = OSLArousedNativeConfig.GetANDNudityMultiplier()
+        float andContribution = andScore * andMultiplier
+
+        ; Show AND nudity information
+        AddHeaderOption("Advanced Nudity Detection")
+        AddTextOption("AND Score", andScore as int)
+        AddTextOption("AND Multiplier", andMultiplier)
+        AddTextOption("AND Contribution", andContribution as int)
+
+        ; Show breakdown of AND states (we'll display the raw score since we can't get individual states from Papyrus)
+        ; The score breakdown:
+        ; - Nude: 50
+        ; - Topless: 20
+        ; - Bottomless: 30
+        ; - Showing Chest: 12
+        ; - Showing Genitals: 15
+        ; - Showing Ass: 8
+        ; - Showing Bra: 8
+        ; - Showing Underwear: 8
+        ; - Topless+Bottomless synergy: 37
+
+        if(andScore >= 50)
+            AddTextOption("Nudity State", "Fully Nude")
+        elseif(andScore >= 37)
+            AddTextOption("Nudity State", "Very Exposed")
+        elseif(andScore >= 30)
+            AddTextOption("Nudity State", "Bottomless")
+        elseif(andScore >= 20)
+            AddTextOption("Nudity State", "Topless")
+        elseif(andScore >= 12)
+            AddTextOption("Nudity State", "Partially Exposed")
+        elseif(andScore > 0)
+            AddTextOption("Nudity State", "Revealing")
+        else
+            AddTextOption("Nudity State", "Clothed")
+        endif
+    endif
+
     int[] activeDeviceTypeIds = OSLArousedNativeActor.GetActiveDeviceTypeIds(Game.GetPlayer())
     if(activeDeviceTypeIds.Length > 0)
         AddHeaderOption("$OSL_DetectedDevices")

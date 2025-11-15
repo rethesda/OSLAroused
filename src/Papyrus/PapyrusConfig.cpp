@@ -91,10 +91,9 @@ float PapyrusConfig::GetANDNudityMultiplier(RE::StaticFunctionTag*)
 	return result;
 }
 
-bool PapyrusConfig::IsANDIntegrationAvailable(RE::StaticFunctionTag*)
+bool PapyrusConfig::IsANDIntegrationEnabled(RE::StaticFunctionTag*)
 {
-	bool result = Integrations::ANDIntegration::GetSingleton()->IsAvailable();
-	logger::trace("IsANDIntegrationAvailable: {}", result);
+	bool result = Integrations::ANDIntegration::GetSingleton()->IsAvailable() && Settings::GetSingleton()->GetUseANDIntegration();
 	return result;
 }
 
@@ -243,7 +242,7 @@ bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 	vm->RegisterFunction("GetUseANDIntegration", "OSLArousedNativeConfig", GetUseANDIntegration);
 	vm->RegisterFunction("SetANDNudityMultiplier", "OSLArousedNativeConfig", SetANDNudityMultiplier);
 	vm->RegisterFunction("GetANDNudityMultiplier", "OSLArousedNativeConfig", GetANDNudityMultiplier);
-	vm->RegisterFunction("IsANDIntegrationAvailable", "OSLArousedNativeConfig", IsANDIntegrationAvailable);
+	vm->RegisterFunction("IsANDIntegrationEnabled", "OSLArousedNativeConfig", IsANDIntegrationEnabled);
 
 	vm->RegisterFunction("SetDeviceTypesBaseline1", "OSLArousedNativeConfig", SetDeviceTypesBaseline1);
 	vm->RegisterFunction("SetDeviceTypesBaseline2", "OSLArousedNativeConfig", SetDeviceTypesBaseline2);

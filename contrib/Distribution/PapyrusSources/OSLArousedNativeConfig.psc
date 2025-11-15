@@ -40,3 +40,10 @@ function SetSLATimeRateHalfLife(float newVal) global native
 function SetSLADefaultExposureRate(float newVal) global native
 
 float function GetUpdateIntervalRealTimeSeconds() global native
+
+;A.N.D. Integration Settings
+function SetUseANDIntegration(bool enabled) global native
+bool function GetUseANDIntegration() global native
+function SetANDNudityMultiplier(float multiplier) global native
+float function GetANDNudityMultiplier() global native
+bool function IsANDIntegrationEnabled() global native
