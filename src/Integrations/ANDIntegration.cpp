@@ -89,28 +89,12 @@ namespace Integrations
             return state;
         }
 
-        auto GetFactionRank = [&](RE::TESFaction* faction) -> int32_t {
-            return faction ? actor->GetFactionRank(faction, actor->IsPlayer()) : 0;
-        };
-
         // Check faction membership for each A.N.D. faction
         auto CheckFaction = [&](RE::TESFaction* faction) -> bool {
             return faction && actor->GetFactionRank(faction, actor->IsPlayer()) > 0;
         };
 
         state.isNude = CheckFaction(m_ANDNudeFaction);
-
-        logger::debug("Actor {:08X} A.N.D. Faction State - Nude: {}, Topless: {}, Bottomless: {}, ShowingChest: {}, ShowingAss: {}, ShowingGenitals: {}, ShowingBra: {}, ShowingUnderwear: {}",
-                        actor->formID,
-                        state.isNude,
-                        GetFactionRank(m_ANDToplessFaction),
-                        GetFactionRank(m_ANDBottomlessFaction),
-                        GetFactionRank(m_ANDShowingChestFaction),
-                        GetFactionRank(m_ANDShowingAssFaction),
-                        GetFactionRank(m_ANDShowingGenitalsFaction),
-                        GetFactionRank(m_ANDShowingBraFaction),
-                        GetFactionRank(m_ANDShowingUnderwearFaction));
-
 
         // Calculate score based on the combination logic specified
         logger::debug("Calculating A.N.D. nudity score for Actor {:08X} {}", actor->formID, state.isNude);
@@ -177,14 +161,14 @@ namespace Integrations
         // If Topless and Bottomless are both true but Nude is false
         if (state.isTopless && state.isBottomless && !state.isNude) {
             baseScore = TOPLESS_BOTTOMLESS_SYNERGY;  // 37.0f
-            logger::trace("Actor {:08X} has topless+bottomless synergy, score: {}",
+            logger::debug("Actor {:08X} has topless+bottomless synergy, score: {}",
                          actor->formID, baseScore);
         }
 
         // Step 7: Clamp to valid range [0, 50]
         state.calculatedScore = std::clamp(baseScore, 0.0f, 50.0f);
 
-        logger::trace("Actor {:08X} nudity score: {} (chest:{}, front:{}, ass:{})",
+        logger::debug("Actor {:08X} nudity score: {} (chest:{}, front:{}, ass:{})",
                      actor->formID, state.calculatedScore, chestScore, frontScore, assScore);
 
         return state;
@@ -212,7 +196,7 @@ namespace Integrations
             float multiplier = settings->GetANDNudityMultiplier();
             float modifier = andScore * multiplier;
 
-            logger::trace("Actor {:08X} using A.N.D. nudity modifier: {} (score:{} * mult:{})",
+            logger::debug("Actor {:08X} using A.N.D. nudity modifier: {} (score:{} * mult:{})",
                          actor->formID, modifier, andScore, multiplier);
             return modifier;
         }
@@ -220,7 +204,7 @@ namespace Integrations
         // Fall back to legacy nudity detection
         if (IsActorNudeLegacy(actor)) {
             float nudeBaseline = settings->GetNudeArousalBaseline();
-            logger::trace("Actor {:08X} using legacy nude baseline: {}", actor->formID, nudeBaseline);
+            logger::debug("Actor {:08X} using legacy nude baseline: {}", actor->formID, nudeBaseline);
             return nudeBaseline;
         }
 
@@ -229,7 +213,7 @@ namespace Integrations
             // Get erotic armor baseline - Settings already has this functionality
             float eroticBaseline = settings->GetEroticArmorBaseline();
             if (eroticBaseline > 0.0f) {
-                logger::trace("Actor {:08X} using erotic armor baseline: {}", actor->formID, eroticBaseline);
+                logger::debug("Actor {:08X} using erotic armor baseline: {}", actor->formID, eroticBaseline);
                 return eroticBaseline;
             }
         }

@@ -1,11 +1,13 @@
 #include "RuntimeEvents.h"
 #include "Settings.h"
 #include "Managers/ArousalManager.h"
+#include "Managers/ArousalSystem/ArousalSystemOSL.h"
 #include "Managers/SceneManager.h"
 #include "Managers/ActorStateManager.h"
 #include "Papyrus/Papyrus.h"
 
 #include "Integrations/DevicesIntegration.h"
+#include "Integrations/ANDIntegration.h"
 
 #include "Utilities/Utils.h"
 
@@ -54,23 +56,6 @@ RE::BSEventNotifyControl RuntimeEvents::OnEquipEvent::ProcessEvent(const RE::TES
 	return RE::BSEventNotifyControl::kContinue;
 }
 
-RE::BSEventNotifyControl RuntimeEvents::OnModCallbackEvent::ProcessEvent(const SKSE::ModCallbackEvent* callbackEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*)
-{
-	if (!callbackEvent) {
-		return RE::BSEventNotifyControl::kContinue;
-	}
-
-	auto eventName = callbackEvent->eventName.c_str();
-	if (!eventName || !std::strcmp(eventName, "OSLA_ANDUpdate")) {
-		return RE::BSEventNotifyControl::kContinue;
-	}
-
-	logger::debug("OnModCallbackEvent: Received ModCallbackEvent: EventName: {}", 
-		callbackEvent->eventName.c_str());
-
-
-	return RE::BSEventNotifyControl::kContinue;
-}
 
 std::vector<RE::ActorHandle> GetNearbyActorsInCell(RE::Actor* source);
 
@@ -230,4 +215,56 @@ std::vector<RE::Actor*> GetNearbySpectatingActors(RE::Actor* source, float radiu
 	});
 
 	return nearbyActors;
+}
+
+
+
+RE::BSEventNotifyControl RuntimeEvents::OnModCallbackEvent::ProcessEvent(const SKSE::ModCallbackEvent* callbackEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*)
+{
+	if (!callbackEvent) {
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	auto eventName = callbackEvent->eventName.c_str();
+	if (!eventName || !std::strcmp(eventName, "OSLA_ANDUpdate") == 0) {
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	logger::debug("OnModCallbackEvent: Received ModCallbackEvent: EventName: {}", eventName);
+
+	// Check if AND integration is enabled
+	if (Settings::GetSingleton()->GetUseANDIntegration() && Integrations::ANDIntegration::GetSingleton()->IsAvailable()) {
+		logger::info("Processing OSLA_ANDUpdate: AND factions recalculated, triggering arousal recalculation");
+
+		// Get the arousal system (only OSL mode supports libido modifier cache)
+		auto& arousalSystem = ArousalManager::GetSingleton()->GetArousalSystem();
+		if (arousalSystem.GetMode() == IArousalSystem::ArousalMode::kOSL) {
+			auto* oslSystem = static_cast<ArousalSystemOSL*>(&arousalSystem);
+
+			// Get player and nearby actors to update their arousal
+			auto player = RE::PlayerCharacter::GetSingleton();
+			if (player) {
+				// Update player's libido cache
+				oslSystem->ActorLibidoModifiersUpdated(player);
+				float newBaseline = oslSystem->GetBaselineArousal(player); // Force baseline recalculation
+				logger::debug("OSLA_ANDUpdate: Updated player libido cache, new baseline arousal: {}", newBaseline);
+
+				// Update all nearby actors' libido cache
+				const auto nearbyActors = GetNearbyActorsInCell(player);
+				for (const auto& actorHandle : nearbyActors) {
+					auto actorPtr = actorHandle.get();
+					if (actorPtr) {
+						auto actor = actorPtr.get();
+						if (actor && ActorStateManager::GetSingleton()->IsHumanoidActor(actor)) {
+							oslSystem->ActorLibidoModifiersUpdated(actor);
+						}
+					}
+				}
+
+				logger::debug("OSLA_ANDUpdate: Updated libido cache for {} nearby actors", nearbyActors.size());
+			}
+		}
+	}
+
+	return RE::BSEventNotifyControl::kContinue;
 }
