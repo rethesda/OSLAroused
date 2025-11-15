@@ -221,6 +221,42 @@ namespace Integrations
         return 0.0f;
     }
 
+    std::vector<bool> ANDIntegration::GetANDFactionStates(RE::Actor* actor)
+    {
+        std::vector<bool> states;
+
+        if (!actor) {
+            return states;
+        }
+
+        Locker locker(m_Lock);
+
+        if (!m_IsAvailable) {
+            return states;
+        }
+
+        // Get the nudity state
+        ANDNudityState nudityState = FetchActorNudityState(actor);
+
+        // Build the result vector in the documented order
+        states.reserve(8);
+        states.push_back(nudityState.isNude);              // [0] isNude
+        states.push_back(nudityState.isTopless);           // [1] isTopless
+        states.push_back(nudityState.isBottomless);        // [2] isBottomless
+        states.push_back(nudityState.isShowingChest);      // [3] isShowingChest
+        states.push_back(nudityState.isShowingAss);        // [4] isShowingAss
+        states.push_back(nudityState.isShowingGenitals);   // [5] isShowingGenitals
+        states.push_back(nudityState.isShowingBra);        // [6] isShowingBra
+        states.push_back(nudityState.isShowingUnderwear);  // [7] isShowingUnderwear
+
+        logger::debug("Actor {:08X} A.N.D. faction states: Nude:{}, Topless:{}, Bottomless:{}, Chest:{}, Ass:{}, Genitals:{}, Bra:{}, Underwear:{}",
+                     actor->formID,
+                     states[0], states[1], states[2], states[3],
+                     states[4], states[5], states[6], states[7]);
+
+        return states;
+    }
+
     bool ANDIntegration::IsActorNudeLegacy(RE::Actor* actor) const
     {
         if (!actor) {

@@ -128,3 +128,7 @@ float function WornDeviceBaselineGain(Actor actor) global native
 
 ;Gets the A.N.D. (Advanced Nudity Detection) nudity score for an actor (0-50)
 float function GetANDNudityScore(Actor actor) global native
+
+;Gets the A.N.D. faction states for an actor as bool array
+;Returns array of 8 bools: [isNude, isTopless, isBottomless, isShowingChest, isShowingAss, isShowingGenitals, isShowingBra, isShowingUnderwear]
+bool[] function GetANDFactionStates(Actor actor) global native

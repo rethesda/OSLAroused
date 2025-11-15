@@ -71,6 +71,24 @@ namespace Integrations
          */
         [[nodiscard]] float GetNudityBaselineModifier(RE::Actor *actor);
 
+        /**
+         * @brief Gets the A.N.D. faction states for an actor as a bool array
+         *
+         * Returns an array of 8 bools representing faction membership:
+         * [0] = isNude
+         * [1] = isTopless
+         * [2] = isBottomless
+         * [3] = isShowingChest
+         * [4] = isShowingAss
+         * [5] = isShowingGenitals
+         * [6] = isShowingBra
+         * [7] = isShowingUnderwear
+         *
+         * @param actor The actor to check
+         * @return Vector of 8 bools representing faction states, or empty if not available
+         */
+        [[nodiscard]] std::vector<bool> GetANDFactionStates(RE::Actor *actor);
+
     private:
         ANDIntegration() {};
         ~ANDIntegration() = default;

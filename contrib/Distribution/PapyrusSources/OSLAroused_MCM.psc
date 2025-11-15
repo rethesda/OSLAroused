@@ -453,32 +453,68 @@ function BaselineStatusPage()
         AddTextOption("AND Multiplier", andMultiplier)
         AddTextOption("AND Contribution", andContribution as int)
 
-        ; Show breakdown of AND states (we'll display the raw score since we can't get individual states from Papyrus)
-        ; The score breakdown:
-        ; - Nude: 50
-        ; - Topless: 20
-        ; - Bottomless: 30
-        ; - Showing Chest: 12
-        ; - Showing Genitals: 15
-        ; - Showing Ass: 8
-        ; - Showing Bra: 8
-        ; - Showing Underwear: 8
-        ; - Topless+Bottomless synergy: 37
+        ; Get and display individual faction states
+        bool[] factionStates = OSLArousedNative.GetANDFactionStates(PuppetActor)
+        if(factionStates.Length >= 8)
+            AddEmptyOption()
+            AddHeaderOption("AND Faction States")
 
-        if(andScore >= 50)
-            AddTextOption("Nudity State", "Fully Nude")
-        elseif(andScore >= 37)
-            AddTextOption("Nudity State", "Very Exposed")
-        elseif(andScore >= 30)
-            AddTextOption("Nudity State", "Bottomless")
-        elseif(andScore >= 20)
-            AddTextOption("Nudity State", "Topless")
-        elseif(andScore >= 12)
-            AddTextOption("Nudity State", "Partially Exposed")
-        elseif(andScore > 0)
-            AddTextOption("Nudity State", "Revealing")
-        else
-            AddTextOption("Nudity State", "Clothed")
+            ; Display each faction state with a checkbox-like indicator
+            ; [0] = isNude
+            if(factionStates[0])
+                AddTextOption("Nude", "Yes")
+            else
+                AddTextOption("Nude", "No", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [1] = isTopless
+            if(factionStates[1])
+                AddTextOption("Topless", "Yes")
+            else
+                AddTextOption("Topless", "No", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [2] = isBottomless
+            if(factionStates[2])
+                AddTextOption("Bottomless", "Yes")
+            else
+                AddTextOption("Bottomless", "No", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [3] = isShowingChest
+            if(factionStates[3])
+                AddTextOption("Showing Chest", "Yes")
+            else
+                AddTextOption("Showing Chest", "No", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [4] = isShowingAss
+            if(factionStates[4])
+                AddTextOption("Showing Ass", "Yes")
+            else
+                AddTextOption("Showing Ass", "No", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [5] = isShowingGenitals
+            if(factionStates[5])
+                AddTextOption("Showing Genitals", "Yes")
+            else
+                AddTextOption("Showing Genitals", "No", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [6] = isShowingBra
+            if(factionStates[6])
+                AddTextOption("Showing Bra", "Yes")
+            else
+                AddTextOption("Showing Bra", "No", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [7] = isShowingUnderwear
+            if(factionStates[7])
+                AddTextOption("Showing Underwear", "Yes")
+            else
+                AddTextOption("Showing Underwear", "No", OPTION_FLAG_DISABLED)
+            endif
         endif
     endif
 

@@ -235,7 +235,7 @@ std::vector<bool> PapyrusInterface::GetANDFactionStates(RE::StaticFunctionTag*, 
 		return {};
 	}
 
-	return Integrations::ANDIntegration::GetSingleton()->GetANDNudityMultiplier(actorRef);
+	return Integrations::ANDIntegration::GetSingleton()->GetANDFactionStates(actorRef);
 }
 
 bool PapyrusInterface::IsActorExhibitionist(RE::StaticFunctionTag* base, RE::Actor* actorRef)
@@ -403,6 +403,7 @@ bool PapyrusInterface::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 	vm->RegisterFunction("IsViewingScene", "OSLArousedNative", IsViewingScene);
 	vm->RegisterFunction("IsWearingEroticArmor", "OSLArousedNative", IsWearingEroticArmor);
 	vm->RegisterFunction("GetANDNudityScore", "OSLArousedNative", GetANDNudityScore);
+	vm->RegisterFunction("GetANDFactionStates", "OSLArousedNative", GetANDFactionStates);
 	vm->RegisterFunction("WornDeviceBaselineGain", "OSLArousedNative", WornDeviceBaselineGain);
 
 	return true;
