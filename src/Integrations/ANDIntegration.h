@@ -2,7 +2,6 @@
 
 #include "../PCH.h"
 #include "../Utilities/Ticker.h"
-#include "../Utilities/LRUCache.h"
 
 namespace Integrations
 {
@@ -72,28 +71,8 @@ namespace Integrations
          */
         [[nodiscard]] float GetNudityBaselineModifier(RE::Actor *actor);
 
-        /**
-         * @brief Gets the cached A.N.D. nudity state for an actor
-         * @param actor The actor to check
-         * @return The cached nudity state
-         */
-        [[nodiscard]] ANDNudityState GetActorNudityState(RE::Actor *actor);
-
-        /**
-         * @brief Invalidates the nudity state cache for an actor
-         * @param actor The actor whose cache should be invalidated
-         */
-        void InvalidateActorCache(RE::Actor *actor);
-
-        /**
-         * @brief Clears all cached nudity states
-         */
-        void ClearCache();
-
     private:
-        ANDIntegration(): m_ActorNudityCache(std::function<ANDNudityState(RE::Actor*)>([this](RE::Actor* actor) {
-              return FetchActorNudityState(actor);
-          }), 100) {}
+        ANDIntegration() {};
         ~ANDIntegration() = default;
         ANDIntegration(const ANDIntegration &) = delete;
         ANDIntegration &operator=(const ANDIntegration &) = delete;
@@ -154,9 +133,6 @@ namespace Integrations
 
         // Special synergy score for Topless + Bottomless without Nude
         static constexpr float TOPLESS_BOTTOMLESS_SYNERGY = 37.0f;
-
-        // Cache for actor nudity states (100 entries like other integrations)
-        Utilities::LRUCache<RE::Actor *, ANDNudityState> m_ActorNudityCache;
 
         // Integration availability flag
         bool m_IsAvailable = false;

@@ -78,9 +78,7 @@ namespace Integrations
             return 0.0f;
         }
 
-        // Get cached state (will fetch if not cached)
-        ANDNudityState state = m_ActorNudityCache(actor);
-        return state.calculatedScore;
+        return FetchActorNudityState(actor).calculatedScore;
     }
 
     ANDIntegration::ANDNudityState ANDIntegration::FetchActorNudityState(RE::Actor* actor)
@@ -91,13 +89,39 @@ namespace Integrations
             return state;
         }
 
-        // Check faction membership for each A.N.D. faction
-        auto CheckFaction = [&](RE::TESFaction* faction) -> bool {
-            return faction && actor->IsInFaction(faction);
+        auto GetFactionRank = [&](RE::TESFaction* faction) -> int32_t {
+            return faction ? actor->GetFactionRank(faction, actor->IsPlayer()) : 0;
         };
 
+        // Check faction membership for each A.N.D. faction
+        auto CheckFaction = [&](RE::TESFaction* faction) -> bool {
+            return faction && actor->GetFactionRank(faction, actor->IsPlayer()) > 0;
+        };
 
         state.isNude = CheckFaction(m_ANDNudeFaction);
+
+        logger::debug("Actor {:08X} A.N.D. Faction State - Nude: {}, Topless: {}, Bottomless: {}, ShowingChest: {}, ShowingAss: {}, ShowingGenitals: {}, ShowingBra: {}, ShowingUnderwear: {}",
+                        actor->formID,
+                        state.isNude,
+                        GetFactionRank(m_ANDToplessFaction),
+                        GetFactionRank(m_ANDBottomlessFaction),
+                        GetFactionRank(m_ANDShowingChestFaction),
+                        GetFactionRank(m_ANDShowingAssFaction),
+                        GetFactionRank(m_ANDShowingGenitalsFaction),
+                        GetFactionRank(m_ANDShowingBraFaction),
+                        GetFactionRank(m_ANDShowingUnderwearFaction));
+
+
+        // Calculate score based on the combination logic specified
+        logger::debug("Calculating A.N.D. nudity score for Actor {:08X} {}", actor->formID, state.isNude);
+
+        // Step 1: Hard override for Nude
+        if (state.isNude) {
+            state.calculatedScore = NUDE_BASELINE;  // 50.0f
+            logger::debug("Actor {:08X} is nude, score: {}", actor->formID, state.calculatedScore);
+            return state;
+        }
+
         state.isTopless = CheckFaction(m_ANDToplessFaction);
         state.isBottomless = CheckFaction(m_ANDBottomlessFaction);
         state.isShowingChest = CheckFaction(m_ANDShowingChestFaction);
@@ -106,14 +130,17 @@ namespace Integrations
         state.isShowingBra = CheckFaction(m_ANDShowingBraFaction);
         state.isShowingUnderwear = CheckFaction(m_ANDShowingUnderwearFaction);
 
-        // Calculate score based on the combination logic specified
-
-        // Step 1: Hard override for Nude
-        if (state.isNude) {
-            state.calculatedScore = NUDE_BASELINE;  // 50.0f
-            logger::trace("Actor {:08X} is nude, score: {}", actor->formID, state.calculatedScore);
-            return state;
-        }
+        
+        logger::debug("Actor {:08X} A.N.D. Nudity State - Nude: {}, Topless: {}, Bottomless: {}, ShowingChest: {}, ShowingAss: {}, ShowingGenitals: {}, ShowingBra: {}, ShowingUnderwear: {}",
+                     actor->formID,
+                     state.isNude,
+                     state.isTopless,
+                     state.isBottomless,
+                     state.isShowingChest,
+                     state.isShowingAss,
+                     state.isShowingGenitals,
+                     state.isShowingBra,
+                     state.isShowingUnderwear);
 
         // Step 2: Chest region (priority: Topless > ShowingChest > ShowingBra)
         float chestScore = 0.0f;
@@ -208,38 +235,6 @@ namespace Integrations
         }
 
         return 0.0f;
-    }
-
-    ANDIntegration::ANDNudityState ANDIntegration::GetActorNudityState(RE::Actor* actor)
-    {
-        if (!actor) {
-            return ANDNudityState{};
-        }
-
-        Locker locker(m_Lock);
-        return m_ActorNudityCache(actor);
-    }
-
-    void ANDIntegration::InvalidateActorCache(RE::Actor* actor)
-    {
-        if (!actor) {
-            return;
-        }
-
-        Locker locker(m_Lock);
-        m_ActorNudityCache.PurgeItem(actor);
-
-        logger::trace("Invalidated A.N.D. cache for actor {:08X}", actor->formID);
-    }
-
-    void ANDIntegration::ClearCache()
-    {
-        Locker locker(m_Lock);
-        // LRUCache doesn't have a Clear method, so we'll need to recreate it
-        // For now, this is a no-op as we can't clear without recreating the cache
-        // Individual actors can still be invalidated with InvalidateActorCache
-
-        logger::trace("Clear all A.N.D. caches requested (no-op - use InvalidateActorCache for individual actors)");
     }
 
     bool ANDIntegration::IsActorNudeLegacy(RE::Actor* actor) const
