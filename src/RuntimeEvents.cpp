@@ -60,11 +60,14 @@ RE::BSEventNotifyControl RuntimeEvents::OnModCallbackEvent::ProcessEvent(const S
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
-	logger::debug("OnModCallbackEvent: Received ModCallbackEvent: EventName: {} StrArg: {} NumArg: {} Sender FormID: {:08X}", 
-		callbackEvent->eventName.c_str(),
-		callbackEvent->strArg.c_str(),
-		callbackEvent->numArg,
-		callbackEvent->sender ? callbackEvent->sender->GetFormID() : 0);
+	auto eventName = callbackEvent->eventName.c_str();
+	if (!eventName || !std::strcmp(eventName, "OSLA_ANDUpdate")) {
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	logger::debug("OnModCallbackEvent: Received ModCallbackEvent: EventName: {}", 
+		callbackEvent->eventName.c_str());
+
 
 	return RE::BSEventNotifyControl::kContinue;
 }
