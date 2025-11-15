@@ -211,7 +211,7 @@ namespace PersistedData
 			logger::critical("Failed to save Settings Data");
 		}
 
-		logger::info("OSLArousal Data Saved");
+		logger::trace("OSLArousal Data Saved");
 	}
 
 	void LoadCallback(SKSE::SerializationInterface* serializationInterface)
@@ -219,7 +219,7 @@ namespace PersistedData
 		std::uint32_t type;
 		std::uint32_t version;
 		std::uint32_t length;
-		logger::info("OSLArousal Load Start");
+		logger::trace("OSLArousal Load Start");
 
 		while (serializationInterface->GetNextRecordInfo(type, version, length)) {
 			logger::trace("Trying Load for {}", DecodeTypeCode(type));
@@ -308,7 +308,7 @@ namespace PersistedData
 			}
 		}
 
-		logger::info("OSLArousal Data loaded");
+		logger::trace("OSLArousal Data loaded");
 	}
 
 	void RevertCallback(SKSE::SerializationInterface*)
@@ -335,7 +335,7 @@ namespace PersistedData
 		//End All Scenes as well
 		SceneManager::GetSingleton()->ClearScenes();
 
-		logger::info("Reverting Data State...");
+		logger::trace("Reverting Data State...");
 	}
 
 	void ResetSystemForModeSwitch()

@@ -33,7 +33,6 @@ namespace RuntimeEvents
 			}
 
 			modCallbackEventSource->AddEventSink(&g_ModCallbackEventHandler);
-			logger::info("Registered OnModCallbackEvent handler");
 			return true;
 		}
 	};

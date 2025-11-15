@@ -25,7 +25,6 @@ namespace Integrations
         }
 
         m_ANDModIndex = andMod->GetPartialIndex();
-        logger::info("Found A.N.D. mod with index: {:04X}", m_ANDModIndex);
 
         // Resolve all A.N.D. factions
         auto ResolveAndCastFaction = [&](uint32_t baseId, const char* name) -> RE::TESFaction* {
@@ -40,8 +39,6 @@ namespace Integrations
                 logger::warn("Resolved A.N.D. faction is not a TESFaction: {} (0x{:08X})", name, formId);
                 return nullptr;
             }
-            logger::debug("Resolved A.N.D. faction: {} -> 0x{:08X}", name, formId);
-
             return faction;
         };
 
@@ -95,9 +92,6 @@ namespace Integrations
         };
 
         state.isNude = CheckFaction(m_ANDNudeFaction);
-
-        // Calculate score based on the combination logic specified
-        logger::debug("Calculating A.N.D. nudity score for Actor {:08X} {}", actor->formID, state.isNude);
 
         // Step 1: Hard override for Nude
         if (state.isNude) {
