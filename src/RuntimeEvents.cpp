@@ -54,6 +54,21 @@ RE::BSEventNotifyControl RuntimeEvents::OnEquipEvent::ProcessEvent(const RE::TES
 	return RE::BSEventNotifyControl::kContinue;
 }
 
+RE::BSEventNotifyControl RuntimeEvents::OnModCallbackEvent::ProcessEvent(const SKSE::ModCallbackEvent* callbackEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*)
+{
+	if (!callbackEvent) {
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	logger::debug("OnModCallbackEvent: Received ModCallbackEvent: EventName: {} StrArg: {} NumArg: {} Sender FormID: {:08X}", 
+		callbackEvent->eventName.c_str(),
+		callbackEvent->strArg.c_str(),
+		callbackEvent->numArg,
+		callbackEvent->sender ? callbackEvent->sender->GetFormID() : 0);
+
+	return RE::BSEventNotifyControl::kContinue;
+}
+
 std::vector<RE::ActorHandle> GetNearbyActorsInCell(RE::Actor* source);
 
 std::vector<RE::Actor*> GetNearbySpectatingActors(RE::Actor* source, float radius);
