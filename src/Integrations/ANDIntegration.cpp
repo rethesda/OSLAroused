@@ -221,40 +221,100 @@ namespace Integrations
         return 0.0f;
     }
 
-    std::vector<bool> ANDIntegration::GetANDFactionStates(RE::Actor* actor)
+    std::vector<float> ANDIntegration::GetANDFactionContributions(RE::Actor* actor)
     {
-        std::vector<bool> states;
+        std::vector<float> contributions;
 
         if (!actor) {
-            return states;
+            return contributions;
         }
 
         Locker locker(m_Lock);
 
         if (!m_IsAvailable) {
-            return states;
+            return contributions;
         }
 
         // Get the nudity state
         ANDNudityState nudityState = FetchActorNudityState(actor);
 
+        // Initialize all contributions to 0
+        contributions.reserve(8);
+        float nudeContrib = 0.0f;
+        float toplessContrib = 0.0f;
+        float bottomlessContrib = 0.0f;
+        float chestContrib = 0.0f;
+        float assContrib = 0.0f;
+        float genitalsContrib = 0.0f;
+        float braContrib = 0.0f;
+        float underwearContrib = 0.0f;
+
+        // Calculate actual contributions based on priority rules
+        // Step 1: Hard override for Nude
+        if (nudityState.isNude) {
+            nudeContrib = NUDE_BASELINE;  // 50.0f
+            // When nude, all other contributions are 0
+        } else {
+            // Step 2: Chest region (priority: Topless > ShowingChest > ShowingBra)
+            if (nudityState.isTopless) {
+                toplessContrib = TOPLESS_BASELINE;  // 20.0f
+                // ShowingChest and ShowingBra are overridden by Topless
+            } else if (nudityState.isShowingChest) {
+                chestContrib = SHOWING_CHEST_BASELINE;  // 12.0f
+                // ShowingBra is overridden by ShowingChest
+            } else if (nudityState.isShowingBra) {
+                braContrib = SHOWING_BRA_BASELINE;  // 8.0f
+            }
+
+            // Step 3: Front bottom region (priority: Bottomless > ShowingGenitals > ShowingUnderwear)
+            if (nudityState.isBottomless) {
+                bottomlessContrib = BOTTOMLESS_BASELINE;  // 30.0f
+                // ShowingGenitals and ShowingUnderwear are overridden by Bottomless
+            } else if (nudityState.isShowingGenitals) {
+                genitalsContrib = SHOWING_GENITALS_BASELINE;  // 15.0f
+                // ShowingUnderwear is overridden by ShowingGenitals
+            } else if (nudityState.isShowingUnderwear) {
+                underwearContrib = SHOWING_UNDERWEAR_BASELINE;  // 8.0f
+            }
+
+            // Step 4: Back bottom / ass region
+            if (!nudityState.isBottomless && nudityState.isShowingAss) {
+                // ShowingAss only contributes if not Bottomless
+                assContrib = SHOWING_ASS_BASELINE;  // 8.0f
+            }
+
+            // Step 5: Special synergy case
+            // If Topless and Bottomless are both true but Nude is false, override individual contributions
+            if (nudityState.isTopless && nudityState.isBottomless) {
+                // Clear individual contributions and set the synergy value
+                // We'll distribute this across topless and bottomless proportionally
+                toplessContrib = 15.0f;  // Part of the 37 synergy
+                bottomlessContrib = 22.0f;  // Part of the 37 synergy
+                // Clear other contributions that would be redundant
+                chestContrib = 0.0f;
+                assContrib = 0.0f;
+                genitalsContrib = 0.0f;
+                braContrib = 0.0f;
+                underwearContrib = 0.0f;
+            }
+        }
+
         // Build the result vector in the documented order
-        states.reserve(8);
-        states.push_back(nudityState.isNude);              // [0] isNude
-        states.push_back(nudityState.isTopless);           // [1] isTopless
-        states.push_back(nudityState.isBottomless);        // [2] isBottomless
-        states.push_back(nudityState.isShowingChest);      // [3] isShowingChest
-        states.push_back(nudityState.isShowingAss);        // [4] isShowingAss
-        states.push_back(nudityState.isShowingGenitals);   // [5] isShowingGenitals
-        states.push_back(nudityState.isShowingBra);        // [6] isShowingBra
-        states.push_back(nudityState.isShowingUnderwear);  // [7] isShowingUnderwear
+        contributions.push_back(nudeContrib);        // [0] Nude
+        contributions.push_back(toplessContrib);     // [1] Topless
+        contributions.push_back(bottomlessContrib);  // [2] Bottomless
+        contributions.push_back(chestContrib);       // [3] ShowingChest
+        contributions.push_back(assContrib);         // [4] ShowingAss
+        contributions.push_back(genitalsContrib);    // [5] ShowingGenitals
+        contributions.push_back(braContrib);         // [6] ShowingBra
+        contributions.push_back(underwearContrib);   // [7] ShowingUnderwear
 
-        logger::debug("Actor {:08X} A.N.D. faction states: Nude:{}, Topless:{}, Bottomless:{}, Chest:{}, Ass:{}, Genitals:{}, Bra:{}, Underwear:{}",
+        logger::debug("Actor {:08X} A.N.D. faction contributions: Nude:{:.1f}, Topless:{:.1f}, Bottomless:{:.1f}, Chest:{:.1f}, Ass:{:.1f}, Genitals:{:.1f}, Bra:{:.1f}, Underwear:{:.1f}",
                      actor->formID,
-                     states[0], states[1], states[2], states[3],
-                     states[4], states[5], states[6], states[7]);
+                     contributions[0], contributions[1], contributions[2], contributions[3],
+                     contributions[4], contributions[5], contributions[6], contributions[7]);
 
-        return states;
+        return contributions;
     }
 
     bool ANDIntegration::IsActorNudeLegacy(RE::Actor* actor) const

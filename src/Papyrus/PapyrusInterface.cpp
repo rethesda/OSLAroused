@@ -228,14 +228,14 @@ float PapyrusInterface::GetANDNudityScore(RE::StaticFunctionTag*, RE::Actor* act
     return Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(actorRef);
 }
 
-std::vector<bool> PapyrusInterface::GetANDFactionStates(RE::StaticFunctionTag*, RE::Actor* actorRef)
+std::vector<float> PapyrusInterface::GetANDFactionContributions(RE::StaticFunctionTag*, RE::Actor* actorRef)
 {
 	if (!actorRef) {
 		Utilities::logInvalidArgsVerbose(__FUNCTION__);
 		return {};
 	}
 
-	return Integrations::ANDIntegration::GetSingleton()->GetANDFactionStates(actorRef);
+	return Integrations::ANDIntegration::GetSingleton()->GetANDFactionContributions(actorRef);
 }
 
 bool PapyrusInterface::IsActorExhibitionist(RE::StaticFunctionTag* base, RE::Actor* actorRef)
@@ -403,7 +403,7 @@ bool PapyrusInterface::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 	vm->RegisterFunction("IsViewingScene", "OSLArousedNative", IsViewingScene);
 	vm->RegisterFunction("IsWearingEroticArmor", "OSLArousedNative", IsWearingEroticArmor);
 	vm->RegisterFunction("GetANDNudityScore", "OSLArousedNative", GetANDNudityScore);
-	vm->RegisterFunction("GetANDFactionStates", "OSLArousedNative", GetANDFactionStates);
+	vm->RegisterFunction("GetANDFactionContributions", "OSLArousedNative", GetANDFactionContributions);
 	vm->RegisterFunction("WornDeviceBaselineGain", "OSLArousedNative", WornDeviceBaselineGain);
 
 	return true;

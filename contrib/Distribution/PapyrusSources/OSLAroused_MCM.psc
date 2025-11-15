@@ -453,67 +453,67 @@ function BaselineStatusPage()
         AddTextOption("AND Multiplier", andMultiplier)
         AddTextOption("AND Contribution", andContribution as int)
 
-        ; Get and display individual faction states
-        bool[] factionStates = OSLArousedNative.GetANDFactionStates(PuppetActor)
-        if(factionStates.Length >= 8)
+        ; Get and display individual faction contributions
+        float[] factionContributions = OSLArousedNative.GetANDFactionContributions(PuppetActor)
+        if(factionContributions.Length >= 8)
             AddEmptyOption()
-            AddHeaderOption("AND Faction States")
+            AddHeaderOption("AND Faction Contributions")
 
-            ; Display each faction state with a checkbox-like indicator
-            ; [0] = isNude
-            if(factionStates[0])
-                AddTextOption("Nude", "Yes")
+            ; Display each faction contribution value
+            ; [0] = Nude contribution (0-50)
+            if(factionContributions[0] > 0)
+                AddTextOption("Nude", "+" + factionContributions[0] as int)
             else
-                AddTextOption("Nude", "No", OPTION_FLAG_DISABLED)
+                AddTextOption("Nude", "0", OPTION_FLAG_DISABLED)
             endif
 
-            ; [1] = isTopless
-            if(factionStates[1])
-                AddTextOption("Topless", "Yes")
+            ; [1] = Topless contribution (0-20)
+            if(factionContributions[1] > 0)
+                AddTextOption("Topless", "+" + factionContributions[1] as int)
             else
-                AddTextOption("Topless", "No", OPTION_FLAG_DISABLED)
+                AddTextOption("Topless", "0", OPTION_FLAG_DISABLED)
             endif
 
-            ; [2] = isBottomless
-            if(factionStates[2])
-                AddTextOption("Bottomless", "Yes")
+            ; [2] = Bottomless contribution (0-30)
+            if(factionContributions[2] > 0)
+                AddTextOption("Bottomless", "+" + factionContributions[2] as int)
             else
-                AddTextOption("Bottomless", "No", OPTION_FLAG_DISABLED)
+                AddTextOption("Bottomless", "0", OPTION_FLAG_DISABLED)
             endif
 
-            ; [3] = isShowingChest
-            if(factionStates[3])
-                AddTextOption("Showing Chest", "Yes")
+            ; [3] = ShowingChest contribution (0-12)
+            if(factionContributions[3] > 0)
+                AddTextOption("Showing Chest", "+" + factionContributions[3] as int)
             else
-                AddTextOption("Showing Chest", "No", OPTION_FLAG_DISABLED)
+                AddTextOption("Showing Chest", "0", OPTION_FLAG_DISABLED)
             endif
 
-            ; [4] = isShowingAss
-            if(factionStates[4])
-                AddTextOption("Showing Ass", "Yes")
+            ; [4] = ShowingAss contribution (0-8)
+            if(factionContributions[4] > 0)
+                AddTextOption("Showing Ass", "+" + factionContributions[4] as int)
             else
-                AddTextOption("Showing Ass", "No", OPTION_FLAG_DISABLED)
+                AddTextOption("Showing Ass", "0", OPTION_FLAG_DISABLED)
             endif
 
-            ; [5] = isShowingGenitals
-            if(factionStates[5])
-                AddTextOption("Showing Genitals", "Yes")
+            ; [5] = ShowingGenitals contribution (0-15)
+            if(factionContributions[5] > 0)
+                AddTextOption("Showing Genitals", "+" + factionContributions[5] as int)
             else
-                AddTextOption("Showing Genitals", "No", OPTION_FLAG_DISABLED)
+                AddTextOption("Showing Genitals", "0", OPTION_FLAG_DISABLED)
             endif
 
-            ; [6] = isShowingBra
-            if(factionStates[6])
-                AddTextOption("Showing Bra", "Yes")
+            ; [6] = ShowingBra contribution (0-8)
+            if(factionContributions[6] > 0)
+                AddTextOption("Showing Bra", "+" + factionContributions[6] as int)
             else
-                AddTextOption("Showing Bra", "No", OPTION_FLAG_DISABLED)
+                AddTextOption("Showing Bra", "0", OPTION_FLAG_DISABLED)
             endif
 
-            ; [7] = isShowingUnderwear
-            if(factionStates[7])
-                AddTextOption("Showing Underwear", "Yes")
+            ; [7] = ShowingUnderwear contribution (0-8)
+            if(factionContributions[7] > 0)
+                AddTextOption("Showing Underwear", "+" + factionContributions[7] as int)
             else
-                AddTextOption("Showing Underwear", "No", OPTION_FLAG_DISABLED)
+                AddTextOption("Showing Underwear", "0", OPTION_FLAG_DISABLED)
             endif
         endif
     endif

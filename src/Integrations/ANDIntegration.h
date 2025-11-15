@@ -72,22 +72,25 @@ namespace Integrations
         [[nodiscard]] float GetNudityBaselineModifier(RE::Actor *actor);
 
         /**
-         * @brief Gets the A.N.D. faction states for an actor as a bool array
+         * @brief Gets the A.N.D. faction contribution values for an actor
          *
-         * Returns an array of 8 bools representing faction membership:
-         * [0] = isNude
-         * [1] = isTopless
-         * [2] = isBottomless
-         * [3] = isShowingChest
-         * [4] = isShowingAss
-         * [5] = isShowingGenitals
-         * [6] = isShowingBra
-         * [7] = isShowingUnderwear
+         * Returns an array of 8 floats representing the arousal contribution from each faction:
+         * [0] = Nude contribution (0 or 50)
+         * [1] = Topless contribution (0 or 20)
+         * [2] = Bottomless contribution (0 or 30)
+         * [3] = ShowingChest contribution (0 or 12)
+         * [4] = ShowingAss contribution (0 or 8)
+         * [5] = ShowingGenitals contribution (0 or 15)
+         * [6] = ShowingBra contribution (0 or 8)
+         * [7] = ShowingUnderwear contribution (0 or 8)
+         *
+         * Note: The actual contributions follow priority rules and may be 0 even if
+         * the actor is in the faction (e.g., ShowingChest is 0 if Topless is active)
          *
          * @param actor The actor to check
-         * @return Vector of 8 bools representing faction states, or empty if not available
+         * @return Vector of 8 floats representing contribution values, or empty if not available
          */
-        [[nodiscard]] std::vector<bool> GetANDFactionStates(RE::Actor *actor);
+        [[nodiscard]] std::vector<float> GetANDFactionContributions(RE::Actor *actor);
 
     private:
         ANDIntegration() {};
