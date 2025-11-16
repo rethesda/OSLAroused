@@ -260,7 +260,7 @@ void ArousalSystemSLA::HandleSpectatingNaked(RE::Actor* actorRef, RE::Actor* nak
 		float andScore = Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(nakedRef);
 		// Scale to 0.0-1.0 range (configured Nude baseline = 1.0 scale)
 		float maxNudeScore = Settings::GetSingleton()->GetANDFactionBaseline(Integrations::ANDFactionIndex::NUDE);
-		nudityScale = maxNudeScore > 0.0f ? (andScore / maxNudeScore) : 1.0f;
+		nudityScale = maxNudeScore > 0.0f ? std::min(1.0f, andScore / maxNudeScore) : 0.0f;
 		logger::trace("AND Integration: Actor {} has nudity score {} / {} (scale {})",
 		             nakedRef->GetDisplayFullName(), andScore, maxNudeScore, nudityScale);
 	}

@@ -205,7 +205,7 @@ float CalculateActorLibidoModifier(RE::Actor* actorRef)
             if (maxNudityScore > 0.0f) {
                 // Scale from 0.0 to 1.0 based on nudity score (configured Nude baseline = 1.0 scale)
                 float maxNudeScore = settings->GetANDFactionBaseline(Integrations::ANDFactionIndex::NUDE);
-                float nudityScale = maxNudeScore > 0.0f ? (maxNudityScore / maxNudeScore) : 1.0f;
+                float nudityScale = maxNudeScore > 0.0f ? std::min(1.0f, maxNudityScore / maxNudeScore) : 0.0f;
                 nudeViewingBaseline *= nudityScale;
                 logger::trace("OSL: Actor {} viewing nudity scaled baseline: {} (score: {}, max: {}, scale: {})",
                              actorRef->GetDisplayFullName(), nudeViewingBaseline, maxNudityScore, maxNudeScore, nudityScale);
