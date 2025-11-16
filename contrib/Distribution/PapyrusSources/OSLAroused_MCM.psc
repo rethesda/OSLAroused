@@ -349,7 +349,15 @@ function SettingsRightColumn()
         SceneParticipantBaselineOid = AddSliderOption("$OSL_Participating", Main.SceneParticipationBaselineIncrease, "{1}")
         VictimGainsArousalOid = AddToggleOption("$OSL_VictimGains", Main.VictimGainsArousal)
         SceneViewerBaselineOid = AddSliderOption("$OSL_Spectating", Main.SceneViewingBaselineIncrease, "{1}")
-        BeingNudeBaselineOid = AddSliderOption("$OSL_Nude", Main.NudityBaselineIncrease, "{1}")
+
+        ; Check if AND integration is enabled - if so, nudity baseline is controlled by AND settings
+        bool andEnabled = OSLArousedNativeConfig.IsANDIntegrationEnabled()
+        if(andEnabled)
+            BeingNudeBaselineOid = AddTextOption("$OSL_Nude", "See Integration Settings", OPTION_FLAG_DISABLED)
+        else
+            BeingNudeBaselineOid = AddSliderOption("$OSL_Nude", Main.NudityBaselineIncrease, "{1}")
+        endif
+
         ViewingNudeBaselineOid = AddSliderOption("$OSL_ViewingNude", Main.ViewingNudityBaselineIncrease, "{1}")
         EroticArmorBaselineOid = AddSliderOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease, "{1}")
         AddHeaderOption("$OSL_DeviceGains")
@@ -370,7 +378,6 @@ endfunction
 
 function SystemPage()
     AddTextOption("$OSL_Version", GetVersion(), OPTION_FLAG_DISABLED)
-    AddEmptyOption()
     AddHeaderOption("$OSL_FrameworkAdapters")
     If (Main.SexLabAdapterLoaded)
         AddTextOption("SexLab", "$OSL_Enabled")
@@ -386,7 +393,6 @@ function SystemPage()
     Else
         AddTextOption("OStim", "$OSL_Disabled", OPTION_FLAG_DISABLED)
     EndIf
-    AddEmptyOption()
     AddHeaderOption("$OSL_Compatibility")
     If (Main.InvalidSlaFound)
         SLAStubLoadedOid = AddTextOption("SexLab Aroused", "$OSL_InvalidInstall")
@@ -402,6 +408,22 @@ function SystemPage()
     Else
         OArousedStubLoadedOid = AddTextOption("OAroused", "$OSL_Disabled")
     EndIf
+
+    AddHeaderOption("Mod Integrations")
+    ; Check if AND (Advanced Nudity Detection) is detected and enabled
+    bool andDetected = OSLArousedNativeConfig.IsANDIntegrationEnabled()
+    bool andEnabled = OSLArousedNativeConfig.GetUseANDIntegration()
+
+    if(andDetected)
+        AddTextOption("Advanced Nudity Detection", "$OSL_Enabled")
+    elseif(andEnabled && !andDetected)
+        ; A.N.D. is enabled in settings but mod not detected
+        AddTextOption("Advanced Nudity Detection", "$OSL_NotDetected", OPTION_FLAG_DISABLED)
+    else
+        ; A.N.D. is disabled in settings
+        AddTextOption("Advanced Nudity Detection", "$OSL_Disabled", OPTION_FLAG_DISABLED)
+    endif
+
     SetCursorPosition(1)
     AddHeaderOption("$OSL_NativeData")
     DumpArousalData = AddTextOption("$OSL_DumpData", "RUN")
@@ -559,46 +581,47 @@ endfunction
 
 function IntegrationSettingsPage()
     ; Check if AND is available (installed and detected)
-    ; IsANDIntegrationEnabled checks both availability and enabled state
-    ; We need to check both separately to show the right UI
+    ; IsANDIntegrationEnabled returns true only if both the mod is detected AND enabled in settings
     bool andEnabledAndAvailable = OSLArousedNativeConfig.IsANDIntegrationEnabled()
     bool andEnabled = OSLArousedNativeConfig.GetUseANDIntegration()
 
-    ; If AND is enabled but not available, it means the mod isn't installed
-    ; If it's not enabled but IsANDIntegrationEnabled returns true, the mod is available but disabled
-    bool andAvailable = andEnabledAndAvailable || !andEnabled
-
-    if(!andAvailable && !andEnabledAndAvailable)
-        AddHeaderOption("No Integrations Available")
-        AddTextOption("Install supported mods to see settings here", "", OPTION_FLAG_DISABLED)
-        AddEmptyOption()
-        AddTextOption("Supported Mods:", "", OPTION_FLAG_DISABLED)
-        AddTextOption("- Advanced Nudity Detection", "", OPTION_FLAG_DISABLED)
-        return
-    endif
-
     ; A.N.D. Integration Settings
     AddHeaderOption("Advanced Nudity Detection (A.N.D.)")
+    ; Show detection status
+    if(andEnabledAndAvailable)
+        AddTextOption("Status:", "Detected and Enabled")
+    elseif(!andEnabled)
+        AddTextOption("Status:", "Disabled", OPTION_FLAG_DISABLED)
+    else
+        AddTextOption("Status:", "Not Installed", OPTION_FLAG_DISABLED)
+    endif
 
-    ; Enable/Disable toggle
+    ; Enable/Disable toggle - always show this so users can toggle even if mod not detected
     EnableANDIntegrationOid = AddToggleOption("Enable A.N.D. Integration", andEnabled)
 
     if(andEnabled)
-        ; Individual faction baseline settings
-        AddEmptyOption()
-        AddHeaderOption("Individual Faction Baselines")
+        if(andEnabledAndAvailable)
+            ; Individual faction baseline settings
+            AddEmptyOption()
+            AddHeaderOption("Individual Faction Baselines")
 
-        ; Left column - Major states
-        ANDNudeOid = AddSliderOption("Nude", OSLArousedNativeConfig.GetANDFactionBaseline(0), "{1}")
-        ANDToplessOid = AddSliderOption("Topless", OSLArousedNativeConfig.GetANDFactionBaseline(1), "{1}")
-        ANDBottomlessOid = AddSliderOption("Bottomless", OSLArousedNativeConfig.GetANDFactionBaseline(2), "{1}")
-        ANDShowingChestOid = AddSliderOption("Showing Chest", OSLArousedNativeConfig.GetANDFactionBaseline(3), "{1}")
+            ; Left column - Major states
+            ANDNudeOid = AddSliderOption("Nude", OSLArousedNativeConfig.GetANDFactionBaseline(0), "{1}")
+            ANDToplessOid = AddSliderOption("Topless", OSLArousedNativeConfig.GetANDFactionBaseline(1), "{1}")
+            ANDBottomlessOid = AddSliderOption("Bottomless", OSLArousedNativeConfig.GetANDFactionBaseline(2), "{1}")
+            ANDShowingChestOid = AddSliderOption("Showing Chest", OSLArousedNativeConfig.GetANDFactionBaseline(3), "{1}")
 
-        ; Right column - Minor states
-        ANDShowingAssOid = AddSliderOption("Showing Ass", OSLArousedNativeConfig.GetANDFactionBaseline(4), "{1}")
-        ANDShowingGenitalsOid = AddSliderOption("Showing Genitals", OSLArousedNativeConfig.GetANDFactionBaseline(5), "{1}")
-        ANDShowingBraOid = AddSliderOption("Showing Bra", OSLArousedNativeConfig.GetANDFactionBaseline(6), "{1}")
-        ANDShowingUnderwearOid = AddSliderOption("Showing Underwear", OSLArousedNativeConfig.GetANDFactionBaseline(7), "{1}")
+            ; Right column - Minor states
+            ANDShowingAssOid = AddSliderOption("Showing Ass", OSLArousedNativeConfig.GetANDFactionBaseline(4), "{1}")
+            ANDShowingGenitalsOid = AddSliderOption("Showing Genitals", OSLArousedNativeConfig.GetANDFactionBaseline(5), "{1}")
+            ANDShowingBraOid = AddSliderOption("Showing Bra", OSLArousedNativeConfig.GetANDFactionBaseline(6), "{1}")
+            ANDShowingUnderwearOid = AddSliderOption("Showing Underwear", OSLArousedNativeConfig.GetANDFactionBaseline(7), "{1}")
+        else
+            ; Mod is enabled but not detected
+            AddEmptyOption()
+            AddTextOption("", "Advanced Nudity Detection mod not found!", OPTION_FLAG_DISABLED)
+            AddTextOption("", "Please install A.N.D. to use this feature", OPTION_FLAG_DISABLED)
+        endif
     else
         AddTextOption("", "Enable to configure settings", OPTION_FLAG_DISABLED)
     endif
