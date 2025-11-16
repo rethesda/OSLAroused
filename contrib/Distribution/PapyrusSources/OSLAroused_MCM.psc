@@ -607,9 +607,8 @@ function IntegrationSettingsPage()
 
     if(andEnabled)
         if(andEnabledAndAvailable)
-            ; Individual faction baseline settings
-            AddEmptyOption()
-            AddHeaderOption("Individual Faction Baselines")
+            ; Individual baseline settings
+            AddHeaderOption("Individual Contributions")
 
             ; Left column - Major states
             ANDNudeOid = AddSliderOption("Nude", OSLArousedNativeConfig.GetANDFactionBaseline(0), "{1}")
@@ -624,7 +623,6 @@ function IntegrationSettingsPage()
             ANDShowingUnderwearOid = AddSliderOption("Showing Underwear", OSLArousedNativeConfig.GetANDFactionBaseline(7), "{1}")
         else
             ; Mod is enabled but not detected
-            AddEmptyOption()
             AddTextOption("", "Advanced Nudity Detection mod not found!", OPTION_FLAG_DISABLED)
             AddTextOption("", "Please install A.N.D. to use this feature", OPTION_FLAG_DISABLED)
         endif
