@@ -1,8 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "../src/Settings.h"
+#include "../src/Integrations/ANDFactionIndices.h"
 
 using Catch::Approx;
+using namespace Integrations::ANDFactionIndex;
 
 // Note: Full integration testing would require mocking RE::Actor and RE::TESFaction
 // which is complex without the game runtime. These tests focus on the logic
@@ -12,7 +14,6 @@ TEST_CASE("A.N.D. Integration - Nudity Score Calculation Logic", "[and_integrati
 {
     Settings* settings = Settings::GetSingleton();
     settings->SetUseANDIntegration(true);
-    settings->SetANDNudityMultiplier(0.6f);
 
     SECTION("Nude state returns maximum score of 50")
     {
@@ -189,45 +190,51 @@ TEST_CASE("A.N.D. Integration - Baseline Modifier Calculations", "[and_integrati
 {
     Settings* settings = Settings::GetSingleton();
 
-    SECTION("A.N.D. score is multiplied correctly")
+    SECTION("A.N.D. faction baselines are configured correctly")
     {
         settings->SetUseANDIntegration(true);
-        settings->SetANDNudityMultiplier(0.6f);
 
-        // With nude score of 50:
-        // Expected: 50 * 0.6 = 30.0f
-        float expectedModifier = 50.0f * 0.6f;
-        REQUIRE(expectedModifier == Approx(30.0f));
+        // Test setting individual faction baselines
+        settings->SetANDFactionBaseline(NUDE, 50.0f);
+        REQUIRE(settings->GetANDFactionBaseline(NUDE) == Approx(50.0f));
 
-        // With topless score of 20:
-        // Expected: 20 * 0.6 = 12.0f
-        expectedModifier = 20.0f * 0.6f;
-        REQUIRE(expectedModifier == Approx(12.0f));
+        settings->SetANDFactionBaseline(TOPLESS, 20.0f);
+        REQUIRE(settings->GetANDFactionBaseline(TOPLESS) == Approx(20.0f));
 
-        // With minimal score of 8:
-        // Expected: 8 * 0.6 = 4.8f
-        expectedModifier = 8.0f * 0.6f;
-        REQUIRE(expectedModifier == Approx(4.8f));
+        settings->SetANDFactionBaseline(BOTTOMLESS, 30.0f);
+        REQUIRE(settings->GetANDFactionBaseline(BOTTOMLESS) == Approx(30.0f));
+
+        settings->SetANDFactionBaseline(SHOWING_CHEST, 12.0f);
+        REQUIRE(settings->GetANDFactionBaseline(SHOWING_CHEST) == Approx(12.0f));
+
+        settings->SetANDFactionBaseline(SHOWING_ASS, 8.0f);
+        REQUIRE(settings->GetANDFactionBaseline(SHOWING_ASS) == Approx(8.0f));
+
+        settings->SetANDFactionBaseline(SHOWING_GENITALS, 15.0f);
+        REQUIRE(settings->GetANDFactionBaseline(SHOWING_GENITALS) == Approx(15.0f));
+
+        settings->SetANDFactionBaseline(SHOWING_BRA, 8.0f);
+        REQUIRE(settings->GetANDFactionBaseline(SHOWING_BRA) == Approx(8.0f));
+
+        settings->SetANDFactionBaseline(SHOWING_UNDERWEAR, 8.0f);
+        REQUIRE(settings->GetANDFactionBaseline(SHOWING_UNDERWEAR) == Approx(8.0f));
     }
 
-    SECTION("Different multiplier values")
+    SECTION("Faction baseline values are clamped to valid range")
     {
         settings->SetUseANDIntegration(true);
 
-        // Test with multiplier = 1.0
-        settings->SetANDNudityMultiplier(1.0f);
-        float expectedModifier = 50.0f * 1.0f;
-        REQUIRE(expectedModifier == Approx(50.0f));
+        // Test clamping to maximum (100)
+        settings->SetANDFactionBaseline(NUDE, 150.0f);
+        REQUIRE(settings->GetANDFactionBaseline(NUDE) == Approx(100.0f));
 
-        // Test with multiplier = 0.3
-        settings->SetANDNudityMultiplier(0.3f);
-        expectedModifier = 50.0f * 0.3f;
-        REQUIRE(expectedModifier == Approx(15.0f));
+        // Test clamping to minimum (0)
+        settings->SetANDFactionBaseline(TOPLESS, -10.0f);
+        REQUIRE(settings->GetANDFactionBaseline(TOPLESS) == Approx(0.0f));
 
-        // Test with multiplier = 0.0 (disabled)
-        settings->SetANDNudityMultiplier(0.0f);
-        expectedModifier = 50.0f * 0.0f;
-        REQUIRE(expectedModifier == Approx(0.0f));
+        // Test normal range value
+        settings->SetANDFactionBaseline(BOTTOMLESS, 35.5f);
+        REQUIRE(settings->GetANDFactionBaseline(BOTTOMLESS) == Approx(35.5f));
     }
 
     SECTION("Falls back to legacy when A.N.D. disabled")
@@ -279,23 +286,25 @@ TEST_CASE("A.N.D. Integration - Settings Integration", "[and_integration]")
 
         settings->SetUseANDIntegration(false);
         REQUIRE(settings->GetUseANDIntegration() == false);
-
-        settings->SetANDNudityMultiplier(0.5f);
-        REQUIRE(settings->GetANDNudityMultiplier() == Approx(0.5f));
-
-        settings->SetANDNudityMultiplier(1.5f);
-        REQUIRE(settings->GetANDNudityMultiplier() == Approx(1.5f));
     }
 
-    SECTION("Multiplier is clamped to valid range")
+    SECTION("Invalid faction index returns 0")
     {
-        // Test upper bound clamping
-        settings->SetANDNudityMultiplier(3.0f);
-        REQUIRE(settings->GetANDNudityMultiplier() <= 2.0f);
+        // Test invalid negative index
+        REQUIRE(settings->GetANDFactionBaseline(-1) == Approx(0.0f));
 
-        // Test lower bound clamping
-        settings->SetANDNudityMultiplier(-1.0f);
-        REQUIRE(settings->GetANDNudityMultiplier() >= 0.0f);
+        // Test invalid positive index
+        REQUIRE(settings->GetANDFactionBaseline(COUNT) == Approx(0.0f));
+        REQUIRE(settings->GetANDFactionBaseline(100) == Approx(0.0f));
+    }
+
+    SECTION("Faction index validation works correctly")
+    {
+        REQUIRE(IsValidIndex(NUDE) == true);
+        REQUIRE(IsValidIndex(SHOWING_UNDERWEAR) == true);
+        REQUIRE(IsValidIndex(-1) == false);
+        REQUIRE(IsValidIndex(COUNT) == false);
+        REQUIRE(IsValidIndex(100) == false);
     }
 }
 
@@ -305,39 +314,34 @@ TEST_CASE("A.N.D. Integration - Combination Examples", "[and_integration][exampl
     {
         // ShowingBra (8) + ShowingUnderwear (8) = 16
         float expectedScore = 16.0f;
-        float expectedModifier = expectedScore * 0.6f;  // 9.6
-        REQUIRE(expectedModifier == Approx(9.6f));
+        REQUIRE(expectedScore == Approx(16.0f));
     }
 
     SECTION("Example: Character topless with underwear")
     {
         // Topless (20) + ShowingUnderwear (8) = 28
         float expectedScore = 28.0f;
-        float expectedModifier = expectedScore * 0.6f;  // 16.8
-        REQUIRE(expectedModifier == Approx(16.8f));
+        REQUIRE(expectedScore == Approx(28.0f));
     }
 
     SECTION("Example: Character bottomless with bra")
     {
         // ShowingBra (8) + Bottomless (30) = 38
         float expectedScore = 38.0f;
-        float expectedModifier = expectedScore * 0.6f;  // 22.8
-        REQUIRE(expectedModifier == Approx(22.8f));
+        REQUIRE(expectedScore == Approx(38.0f));
     }
 
     SECTION("Example: Character showing chest and ass")
     {
         // ShowingChest (12) + ShowingAss (8) = 20
         float expectedScore = 20.0f;
-        float expectedModifier = expectedScore * 0.6f;  // 12.0
-        REQUIRE(expectedModifier == Approx(12.0f));
+        REQUIRE(expectedScore == Approx(20.0f));
     }
 
     SECTION("Example: Maximum exposure without being nude")
     {
         // Topless (20) + Bottomless (30) with synergy = 37
         float expectedScore = 37.0f;
-        float expectedModifier = expectedScore * 0.6f;  // 22.2
-        REQUIRE(expectedModifier == Approx(22.2f));
+        REQUIRE(expectedScore == Approx(37.0f));
     }
 }

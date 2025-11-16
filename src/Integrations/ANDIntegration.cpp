@@ -66,16 +66,25 @@ namespace Integrations
     float ANDIntegration::GetANDNudityScore(RE::Actor* actor)
     {
         if (!actor) {
+            logger::trace("GetANDNudityScore: Actor is null");
             return 0.0f;
         }
 
         Locker locker(m_Lock);
 
         if (!m_IsAvailable) {
+            logger::trace("GetANDNudityScore: A.N.D. integration not available");
             return 0.0f;
         }
 
-        return FetchActorNudityState(actor).calculatedScore;
+        try {
+            return FetchActorNudityState(actor).calculatedScore;
+        }
+        catch (const std::exception& e) {
+            logger::error("GetANDNudityScore: Exception caught for actor {:08X}: {}",
+                         actor->formID, e.what());
+            return 0.0f;
+        }
     }
 
     ANDIntegration::ANDNudityState ANDIntegration::FetchActorNudityState(RE::Actor* actor)
@@ -86,12 +95,24 @@ namespace Integrations
             return state;
         }
 
-        // Check faction membership for each A.N.D. faction
-        auto CheckFaction = [&](RE::TESFaction* faction) -> bool {
-            return faction && actor->GetFactionRank(faction, actor->IsPlayer()) > 0;
+        // Check faction membership for each A.N.D. faction with error handling
+        auto CheckFaction = [&](RE::TESFaction* faction, const char* factionName) -> bool {
+            if (!faction) {
+                logger::trace("CheckFaction: {} faction is null", factionName);
+                return false;
+            }
+
+            try {
+                return actor->GetFactionRank(faction, actor->IsPlayer()) > 0;
+            }
+            catch (const std::exception& e) {
+                logger::error("CheckFaction: Error checking {} faction for actor {:08X}: {}",
+                             factionName, actor->formID, e.what());
+                return false;
+            }
         };
 
-        state.isNude = CheckFaction(m_ANDNudeFaction);
+        state.isNude = CheckFaction(m_ANDNudeFaction, "Nude");
 
         // Get configurable baseline values from Settings
         const auto settings = Settings::GetSingleton();
@@ -224,17 +245,20 @@ namespace Integrations
         std::vector<float> contributions;
 
         if (!actor) {
+            logger::trace("GetANDFactionContributions: Actor is null");
             return contributions;
         }
 
         Locker locker(m_Lock);
 
         if (!m_IsAvailable) {
+            logger::trace("GetANDFactionContributions: A.N.D. integration not available");
             return contributions;
         }
 
-        // Get the nudity state
-        ANDNudityState nudityState = FetchActorNudityState(actor);
+        try {
+            // Get the nudity state
+            ANDNudityState nudityState = FetchActorNudityState(actor);
 
         // Get configurable baseline values from Settings
         const auto settings = Settings::GetSingleton();
@@ -317,12 +341,19 @@ namespace Integrations
         contributions.push_back(braContrib);         // [6] ShowingBra
         contributions.push_back(underwearContrib);   // [7] ShowingUnderwear
 
-        logger::debug("Actor {:08X} A.N.D. faction contributions: Nude:{:.1f}, Topless:{:.1f}, Bottomless:{:.1f}, Chest:{:.1f}, Ass:{:.1f}, Genitals:{:.1f}, Bra:{:.1f}, Underwear:{:.1f}",
-                     actor->formID,
-                     contributions[0], contributions[1], contributions[2], contributions[3],
-                     contributions[4], contributions[5], contributions[6], contributions[7]);
+            logger::debug("Actor {:08X} A.N.D. faction contributions: Nude:{:.1f}, Topless:{:.1f}, Bottomless:{:.1f}, Chest:{:.1f}, Ass:{:.1f}, Genitals:{:.1f}, Bra:{:.1f}, Underwear:{:.1f}",
+                         actor->formID,
+                         contributions[0], contributions[1], contributions[2], contributions[3],
+                         contributions[4], contributions[5], contributions[6], contributions[7]);
 
-        return contributions;
+            return contributions;
+        }
+        catch (const std::exception& e) {
+            logger::error("GetANDFactionContributions: Exception caught for actor {:08X}: {}",
+                         actor->formID, e.what());
+            // Return empty vector on error
+            return std::vector<float>();
+        }
     }
 
     bool ANDIntegration::IsActorNudeLegacy(RE::Actor* actor) const
