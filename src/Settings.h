@@ -1,4 +1,6 @@
 #pragma once
+#include "Integrations/ANDFactionIndices.h"
+
 using Lock = std::recursive_mutex;
 using Locker = std::lock_guard<Lock>;
 
@@ -234,16 +236,17 @@ public:
 
 	float GetANDFactionBaseline(int index) const
 	{
+		using namespace Integrations::ANDFactionIndex;
 		Locker locker(m_Lock);
 		switch (index) {
-		case 0: return m_ANDFactionBaselines.Nude;
-		case 1: return m_ANDFactionBaselines.Topless;
-		case 2: return m_ANDFactionBaselines.Bottomless;
-		case 3: return m_ANDFactionBaselines.ShowingChest;
-		case 4: return m_ANDFactionBaselines.ShowingAss;
-		case 5: return m_ANDFactionBaselines.ShowingGenitals;
-		case 6: return m_ANDFactionBaselines.ShowingBra;
-		case 7: return m_ANDFactionBaselines.ShowingUnderwear;
+		case NUDE: return m_ANDFactionBaselines.Nude;
+		case TOPLESS: return m_ANDFactionBaselines.Topless;
+		case BOTTOMLESS: return m_ANDFactionBaselines.Bottomless;
+		case SHOWING_CHEST: return m_ANDFactionBaselines.ShowingChest;
+		case SHOWING_ASS: return m_ANDFactionBaselines.ShowingAss;
+		case SHOWING_GENITALS: return m_ANDFactionBaselines.ShowingGenitals;
+		case SHOWING_BRA: return m_ANDFactionBaselines.ShowingBra;
+		case SHOWING_UNDERWEAR: return m_ANDFactionBaselines.ShowingUnderwear;
 		default: return 0.0f;
 		}
 	}

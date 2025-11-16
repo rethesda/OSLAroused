@@ -104,13 +104,13 @@ namespace Integrations
             return state;
         }
 
-        state.isTopless = CheckFaction(m_ANDToplessFaction);
-        state.isBottomless = CheckFaction(m_ANDBottomlessFaction);
-        state.isShowingChest = CheckFaction(m_ANDShowingChestFaction);
-        state.isShowingAss = CheckFaction(m_ANDShowingAssFaction);
-        state.isShowingGenitals = CheckFaction(m_ANDShowingGenitalsFaction);
-        state.isShowingBra = CheckFaction(m_ANDShowingBraFaction);
-        state.isShowingUnderwear = CheckFaction(m_ANDShowingUnderwearFaction);
+        state.isTopless = CheckFaction(m_ANDToplessFaction, "Topless");
+        state.isBottomless = CheckFaction(m_ANDBottomlessFaction, "Bottomless");
+        state.isShowingChest = CheckFaction(m_ANDShowingChestFaction, "ShowingChest");
+        state.isShowingAss = CheckFaction(m_ANDShowingAssFaction, "ShowingAss");
+        state.isShowingGenitals = CheckFaction(m_ANDShowingGenitalsFaction, "ShowingGenitals");
+        state.isShowingBra = CheckFaction(m_ANDShowingBraFaction, "ShowingBra");
+        state.isShowingUnderwear = CheckFaction(m_ANDShowingUnderwearFaction, "ShowingUnderwear");
 
 
         logger::debug("Actor {:08X} A.N.D. Nudity State - Nude: {}, Topless: {}, Bottomless: {}, ShowingChest: {}, ShowingAss: {}, ShowingGenitals: {}, ShowingBra: {}, ShowingUnderwear: {}",
