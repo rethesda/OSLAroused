@@ -3,6 +3,7 @@
 #include "Papyrus/Papyrus.h"
 #include "Settings.h"
 #include "Utilities/Utils.h"
+#include "Integrations/ANDIntegration.h"
 
 using namespace PersistedData;
 
@@ -250,25 +251,43 @@ void ArousalSystemSLA::HandleSpectatingNaked(RE::Actor* actorRef, RE::Actor* nak
 	float updateInterval = Settings::GetSingleton()->GetArousalUpdateInterval();
 	float exposureScale = std::min(1.f, elapsedGameTimeSinceLastUpdate / updateInterval);
 
+	// Calculate nudity score if AND integration is enabled
+	float nudityScale = 1.0f;  // Default to full exposure for legacy behavior
+	if (Settings::GetSingleton()->GetUseANDIntegration() && Integrations::ANDIntegration::GetSingleton()->IsANDAvailable())
+	{
+		// Get AND nudity score (0-50 range)
+		float andScore = Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(nakedRef);
+		// Scale to 0.0-1.0 range (50 = full nudity = 1.0 scale)
+		nudityScale = andScore / 50.0f;
+		logger::trace("AND Integration: Actor {} has nudity score {} (scale {})", nakedRef->GetDisplayFullName(), andScore, nudityScale);
+	}
+
 	//First get gender preference
 	int genderPreference = Utilities::Factions::GetSingleton()->GetFactionRank(actorRef, FactionType::sla_GenderPreference);
 	auto nakedBase = nakedRef->GetActorBase();
 	if (nakedBase && (genderPreference == nakedBase->GetSex() || genderPreference == 2))
 	{
-		logger::trace("Actor {} gaining {} exposure for seeing {} naked", actorRef->GetDisplayFullName(), 4 * exposureScale, nakedRef->GetDisplayFullName());
+		float exposureGain = 4 * exposureScale * nudityScale;
+		logger::trace("Actor {} gaining {} exposure for seeing {} naked (base: 4, scale: {}, nudity: {})",
+			actorRef->GetDisplayFullName(), exposureGain, nakedRef->GetDisplayFullName(), exposureScale, nudityScale);
 		//The main updateloop runs GetArousal so dont need to send an event here
-		ModifyArousal(actorRef, 4 * exposureScale, false);
+		ModifyArousal(actorRef, exposureGain, false);
 	}
 	else
 	{
-		logger::trace("Actor {} gaining {} exposure for seeing {} naked", actorRef->GetDisplayFullName(), 2 * exposureScale, nakedRef->GetDisplayFullName());
-		ModifyArousal(actorRef, 2 * exposureScale, false);
+		float exposureGain = 2 * exposureScale * nudityScale;
+		logger::trace("Actor {} gaining {} exposure for seeing {} naked (base: 2, scale: {}, nudity: {})",
+			actorRef->GetDisplayFullName(), exposureGain, nakedRef->GetDisplayFullName(), exposureScale, nudityScale);
+		ModifyArousal(actorRef, exposureGain, false);
 	}
 
-	//If the naked actor is an exhibitionist, then increase its
+	//If the naked actor is an exhibitionist, then increase its exposure
+	// Also scale exhibitionist bonus by nudity level
 	if (PersistedData::IsActorExhibitionistData::GetSingleton()->GetData(nakedRef->formID, false))
 	{
-		logger::trace("Actor {} gaining {} exposure for being an exhibitionist to {}", nakedRef->GetDisplayFullName(), 2 * exposureScale, actorRef->GetDisplayFullName());
-		ModifyArousal(nakedRef, 2 * exposureScale, false);
+		float exhibitionistGain = 2 * exposureScale * nudityScale;
+		logger::trace("Actor {} gaining {} exposure for being an exhibitionist to {} (scale: {}, nudity: {})",
+			nakedRef->GetDisplayFullName(), exhibitionistGain, actorRef->GetDisplayFullName(), exposureScale, nudityScale);
+		ModifyArousal(nakedRef, exhibitionistGain, false);
 	}
 }
