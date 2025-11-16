@@ -28,6 +28,7 @@ public:
 		return m_RegisteredKeywordEditorIds;
 	}
     bool RegisterKeyword(std::string keywordEditorId);
+    bool SaveANDFactionBaseline(int index, float value);
 
 private:
     bool LoadINI(std::string filename);
