@@ -129,12 +129,35 @@ void WorldChecks::ArousalUpdateLoop()
 		if (!actor) {
 			continue;
 		}
-		//If the actor is naked, then get nearby spectators to update spectator array
-		if (actorStateManager->IsHumanoidActor(actor) && actorStateManager->GetActorNaked(actor)) {
-			logger::trace("ArousalUpdateLoop: Actor {} is naked", actor->GetDisplayFullName());
+
+		// Check if actor is naked or partially nude
+		bool isNakedOrPartiallyNude = false;
+		float nudityScore = 0.0f;
+
+		// If AND integration is enabled, use it for more sophisticated nudity detection
+		if (Settings::GetSingleton()->GetUseANDIntegration() &&
+		    Integrations::ANDIntegration::GetSingleton()->IsAvailable()) {
+			nudityScore = Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(actor);
+			isNakedOrPartiallyNude = (nudityScore > 0.0f);
+			if (isNakedOrPartiallyNude) {
+				logger::trace("ArousalUpdateLoop: Actor {} has AND nudity score {}",
+				             actor->GetDisplayFullName(), nudityScore);
+			}
+		} else {
+			// Fallback to legacy binary naked check
+			isNakedOrPartiallyNude = actorStateManager->GetActorNaked(actor);
+			if (isNakedOrPartiallyNude) {
+				logger::trace("ArousalUpdateLoop: Actor {} is naked (legacy check)",
+				             actor->GetDisplayFullName());
+			}
+		}
+
+		// If the actor is naked or partially nude, get nearby spectators to update spectator array
+		if (actorStateManager->IsHumanoidActor(actor) && isNakedOrPartiallyNude) {
 			const auto spectators = GetNearbySpectatingActors(actor, scanDistance);
 			for (const auto spectator : spectators) {
 				spectatingActors.insert(spectator);
+				// HandleSpectatingNaked already scales gains based on AND score internally
 				ArousalManager::GetSingleton()->GetArousalSystem().HandleSpectatingNaked(spectator, actor, elapsedGameTimeSinceLastCheck);
 			}
 		}
