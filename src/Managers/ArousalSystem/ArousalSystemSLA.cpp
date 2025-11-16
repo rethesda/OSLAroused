@@ -253,7 +253,7 @@ void ArousalSystemSLA::HandleSpectatingNaked(RE::Actor* actorRef, RE::Actor* nak
 
 	// Calculate nudity score if AND integration is enabled
 	float nudityScale = 1.0f;  // Default to full exposure for legacy behavior
-	if (Settings::GetSingleton()->GetUseANDIntegration() && Integrations::ANDIntegration::GetSingleton()->IsANDAvailable())
+	if (Settings::GetSingleton()->GetUseANDIntegration() && Integrations::ANDIntegration::GetSingleton()->IsAvailable())
 	{
 		// Get AND nudity score (0-50 range)
 		float andScore = Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(nakedRef);

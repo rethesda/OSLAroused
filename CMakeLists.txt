@@ -39,7 +39,9 @@ set(tests
         test/test_SLAExposure.cpp
         test/test_OSLArousal.cpp
         test/test_PersistedData.cpp
-        test/test_ANDIntegration.cpp)
+        test/test_ANDIntegration.cpp
+        test/test_SLA_AND_Integration.cpp
+        test/test_OSL_AND_Integration.cpp)
 
 
 source_group(
