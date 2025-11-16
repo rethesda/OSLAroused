@@ -8,6 +8,7 @@
 
 #include "Integrations/DevicesIntegration.h"
 #include "Integrations/ANDIntegration.h"
+#include "Integrations/ANDFactionIndices.h"
 
 #include "Utilities/Utils.h"
 
@@ -114,11 +115,14 @@ void WorldChecks::ArousalUpdateLoop()
 		WorldChecks::ArousalUpdateTicker::GetSingleton()->LastNearbyArousalUpdateGameTime = curHours;
 	}
 
-	
-	std::set<RE::Actor*> spectatingActors;
+
+	// Map of spectator -> maximum nudity score they're viewing
+	std::map<RE::Actor*, float> spectatorNudityScores;
 	float scanDistance = Settings::GetSingleton()->GetScanDistance();
 	const auto nearbyActors = GetNearbyActorsInCell(player);
 	const auto actorStateManager = ActorStateManager::GetSingleton();
+	const bool useANDIntegration = Settings::GetSingleton()->GetUseANDIntegration() &&
+	                               Integrations::ANDIntegration::GetSingleton()->IsAvailable();
 
 	for (const auto actorHandle : nearbyActors) {
 		auto actorPtr = actorHandle.get();
@@ -135,8 +139,7 @@ void WorldChecks::ArousalUpdateLoop()
 		float nudityScore = 0.0f;
 
 		// If AND integration is enabled, use it for more sophisticated nudity detection
-		if (Settings::GetSingleton()->GetUseANDIntegration() &&
-		    Integrations::ANDIntegration::GetSingleton()->IsAvailable()) {
+		if (useANDIntegration) {
 			nudityScore = Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(actor);
 			isNakedOrPartiallyNude = (nudityScore > 0.0f);
 			if (isNakedOrPartiallyNude) {
@@ -147,6 +150,8 @@ void WorldChecks::ArousalUpdateLoop()
 			// Fallback to legacy binary naked check
 			isNakedOrPartiallyNude = actorStateManager->GetActorNaked(actor);
 			if (isNakedOrPartiallyNude) {
+				// For legacy mode, treat as full nudity (use configured Nude baseline)
+				nudityScore = Settings::GetSingleton()->GetANDFactionBaseline(Integrations::ANDFactionIndex::NUDE);
 				logger::trace("ArousalUpdateLoop: Actor {} is naked (legacy check)",
 				             actor->GetDisplayFullName());
 			}
@@ -156,14 +161,21 @@ void WorldChecks::ArousalUpdateLoop()
 		if (actorStateManager->IsHumanoidActor(actor) && isNakedOrPartiallyNude) {
 			const auto spectators = GetNearbySpectatingActors(actor, scanDistance);
 			for (const auto spectator : spectators) {
-				spectatingActors.insert(spectator);
-				// HandleSpectatingNaked already scales gains based on AND score internally
+				// Track the maximum nudity score this spectator is viewing
+				auto it = spectatorNudityScores.find(spectator);
+				if (it == spectatorNudityScores.end()) {
+					spectatorNudityScores[spectator] = nudityScore;
+				} else {
+					spectatorNudityScores[spectator] = std::max(it->second, nudityScore);
+				}
+
+				// HandleSpectatingNaked already scales gains based on AND score internally (SLA mode only)
 				ArousalManager::GetSingleton()->GetArousalSystem().HandleSpectatingNaked(spectator, actor, elapsedGameTimeSinceLastCheck);
 			}
 		}
 	}
 
-	ActorStateManager::GetSingleton()->UpdateActorsSpectating(spectatingActors);
+	ActorStateManager::GetSingleton()->UpdateActorsSpectating(spectatorNudityScores);
 
 	if (performNearbyArousalUpdates) {
 		for (const auto actorHandle : nearbyActors) {

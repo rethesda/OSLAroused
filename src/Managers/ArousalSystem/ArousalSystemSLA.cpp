@@ -4,6 +4,7 @@
 #include "Settings.h"
 #include "Utilities/Utils.h"
 #include "Integrations/ANDIntegration.h"
+#include "Integrations/ANDFactionIndices.h"
 
 using namespace PersistedData;
 
@@ -255,11 +256,13 @@ void ArousalSystemSLA::HandleSpectatingNaked(RE::Actor* actorRef, RE::Actor* nak
 	float nudityScale = 1.0f;  // Default to full exposure for legacy behavior
 	if (Settings::GetSingleton()->GetUseANDIntegration() && Integrations::ANDIntegration::GetSingleton()->IsAvailable())
 	{
-		// Get AND nudity score (0-50 range)
+		// Get AND nudity score
 		float andScore = Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(nakedRef);
-		// Scale to 0.0-1.0 range (50 = full nudity = 1.0 scale)
-		nudityScale = andScore / 50.0f;
-		logger::trace("AND Integration: Actor {} has nudity score {} (scale {})", nakedRef->GetDisplayFullName(), andScore, nudityScale);
+		// Scale to 0.0-1.0 range (configured Nude baseline = 1.0 scale)
+		float maxNudeScore = Settings::GetSingleton()->GetANDFactionBaseline(Integrations::ANDFactionIndex::NUDE);
+		nudityScale = maxNudeScore > 0.0f ? (andScore / maxNudeScore) : 1.0f;
+		logger::trace("AND Integration: Actor {} has nudity score {} / {} (scale {})",
+		             nakedRef->GetDisplayFullName(), andScore, maxNudeScore, nudityScale);
 	}
 
 	//First get gender preference

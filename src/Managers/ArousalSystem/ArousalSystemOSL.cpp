@@ -5,6 +5,7 @@
 #include "Papyrus/Papyrus.h"
 #include "Integrations/DevicesIntegration.h"
 #include "Integrations/ANDIntegration.h"
+#include "Integrations/ANDFactionIndices.h"
 #include "Managers/ArousalManager.h"
 
 using namespace PersistedData;
@@ -196,7 +197,22 @@ float CalculateActorLibidoModifier(RE::Actor* actorRef)
     libidoModifier += nudityModifier;
 
     if (Utilities::Actor::IsViewingNaked(actorRef)) {
-        libidoModifier += settings->GetNudeViewingBaseline();
+        float nudeViewingBaseline = settings->GetNudeViewingBaseline();
+
+        // Scale the viewing baseline based on AND nudity score if enabled
+        if (settings->GetUseANDIntegration() && Integrations::ANDIntegration::GetSingleton()->IsAvailable()) {
+            float maxNudityScore = ActorStateManager::GetSingleton()->GetSpectatingMaxNudityScore(actorRef);
+            if (maxNudityScore > 0.0f) {
+                // Scale from 0.0 to 1.0 based on nudity score (configured Nude baseline = 1.0 scale)
+                float maxNudeScore = settings->GetANDFactionBaseline(Integrations::ANDFactionIndex::NUDE);
+                float nudityScale = maxNudeScore > 0.0f ? (maxNudityScore / maxNudeScore) : 1.0f;
+                nudeViewingBaseline *= nudityScale;
+                logger::trace("OSL: Actor {} viewing nudity scaled baseline: {} (score: {}, max: {}, scale: {})",
+                             actorRef->GetDisplayFullName(), nudeViewingBaseline, maxNudityScore, maxNudeScore, nudityScale);
+            }
+        }
+
+        libidoModifier += nudeViewingBaseline;
     }
 
     if (Utilities::Actor::IsParticipatingInScene(actorRef)) {
