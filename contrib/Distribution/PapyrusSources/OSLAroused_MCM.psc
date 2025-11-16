@@ -359,7 +359,13 @@ function SettingsRightColumn()
         endif
 
         ViewingNudeBaselineOid = AddSliderOption("$OSL_ViewingNude", Main.ViewingNudityBaselineIncrease, "{1}")
-        EroticArmorBaselineOid = AddSliderOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease, "{1}")
+
+        ; Erotic Armor also uses AND integration when enabled
+        if(andEnabled)
+            EroticArmorBaselineOid = AddTextOption("$OSL_EroticArmor", "See Integration Settings", OPTION_FLAG_DISABLED)
+        else
+            EroticArmorBaselineOid = AddSliderOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease, "{1}")
+        endif
         AddHeaderOption("$OSL_DeviceGains")
         DeviceBaselineGainTypeOid = AddMenuOption("$OSL_DeviceType", "")
         DeviceBaselineGainValueOid = AddSliderOption("$OSL_SelectedTypeGain", 0)
@@ -447,6 +453,11 @@ function BaselineStatusPage()
         else
             AddTextOption("$OSL_Nude", "0")
         endif
+        if(OSLArousedNative.IsWearingEroticArmor(PuppetActor))
+            AddTextOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease)
+        else
+            AddTextOption("$OSL_EroticArmor", "0")
+        endif
     endif
 
     if(OSLArousedNative.IsViewingNaked(PuppetActor))
@@ -455,7 +466,6 @@ function BaselineStatusPage()
         AddTextOption("$OSL_ViewingNude", "0")
     endif
 
-    AddEmptyOption()
     AddHeaderOption("$OSL_SceneContributions")
     if(OSLArousedNative.IsInScene(PuppetActor))
         AddTextOption("$OSL_Participating", Main.SceneParticipationBaselineIncrease)
@@ -468,13 +478,9 @@ function BaselineStatusPage()
         AddTextOption("$OSL_Spectating", "0")
     endif
 
-    if(OSLArousedNative.IsWearingEroticArmor(PuppetActor))
-        AddTextOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease)
-    else
-        AddTextOption("$OSL_EroticArmor", "0")
-    endif
 
-    AddTextOption("$OSL_WornDevicesGain", OSLArousedNative.WornDeviceBaselineGain(PuppetActor))
+
+    AddTextOption("$OSL_WornDevicesGain", OSLArousedNativeConfig.RoundFloat(OSLArousedNative.WornDeviceBaselineGain(PuppetActor), 1))
 
     SetCursorPosition(1)
     if(andEnabled)
@@ -483,12 +489,12 @@ function BaselineStatusPage()
 
         ; Show AND nudity information
         AddHeaderOption("Advanced Nudity Detection")
-        AddTextOption("AND Score", andScore as int)
+        AddTextOption("Total Nudity Contribution", andScore as int)
 
         ; Get and display individual faction contributions
         float[] factionContributions = OSLArousedNative.GetANDFactionContributions(PuppetActor)
         if(factionContributions.Length >= 8)
-            AddHeaderOption("AND Faction Contributions")
+            AddHeaderOption("Individual Contributions")
 
             ; Display each faction contribution value
             ; [0] = Nude contribution (0-50)
