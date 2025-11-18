@@ -121,7 +121,7 @@ namespace Integrations
         // Step 1: Hard override for Nude
         if (state.isNude) {
             state.calculatedScore = baselines.Nude;
-            logger::debug("Actor {:08X} is nude, score: {}", actor->formID, state.calculatedScore);
+            logger::trace("Actor {} is nude, score: {}", actor->GetDisplayFullName(), state.calculatedScore);
             return state;
         }
 
@@ -134,8 +134,8 @@ namespace Integrations
         state.isShowingUnderwear = CheckFaction(m_ANDShowingUnderwearFaction, "ShowingUnderwear");
 
 
-        logger::debug("Actor {:08X} A.N.D. Nudity State - Nude: {}, Topless: {}, Bottomless: {}, ShowingChest: {}, ShowingAss: {}, ShowingGenitals: {}, ShowingBra: {}, ShowingUnderwear: {}",
-                     actor->formID,
+        logger::trace("Actor {} A.N.D. Nudity State - Nude: {}, Topless: {}, Bottomless: {}, ShowingChest: {}, ShowingAss: {}, ShowingGenitals: {}, ShowingBra: {}, ShowingUnderwear: {}",
+                     actor->GetDisplayFullName(),
                      state.isNude,
                      state.isTopless,
                      state.isBottomless,
@@ -181,8 +181,8 @@ namespace Integrations
         if (state.isTopless && state.isBottomless && !state.isNude) {
             // Use a synergy bonus that's proportional to the configured values
             baseScore = (baselines.Topless + baselines.Bottomless) * 0.74f;
-            logger::debug("Actor {:08X} has topless+bottomless synergy, score: {}",
-                         actor->formID, baseScore);
+            logger::trace("Actor {} has topless+bottomless synergy, score: {}",
+                         actor->GetDisplayFullName(), baseScore);
         }
 
         // Step 7: Clamp to valid range [0, 100] (using max configured value)
@@ -190,8 +190,8 @@ namespace Integrations
                                    baselines.ShowingChest + baselines.ShowingGenitals + baselines.ShowingAss});
         state.calculatedScore = std::clamp(baseScore, 0.0f, maxValue);
 
-        logger::debug("Actor {:08X} nudity score: {} (chest:{}, front:{}, ass:{})",
-                     actor->formID, state.calculatedScore, chestScore, frontScore, assScore);
+        logger::trace("Actor {} nudity score: {} (chest:{}, front:{}, ass:{})",
+                     actor->GetDisplayFullName(), state.calculatedScore, chestScore, frontScore, assScore);
 
         return state;
     }
@@ -215,15 +215,15 @@ namespace Integrations
 
         // If we have an A.N.D. score, return it directly
         if (andScore > 0.0f) {
-            logger::debug("Actor {:08X} using A.N.D. nudity modifier: {}",
-                         actor->formID, andScore);
+            logger::trace("Actor {} using A.N.D. nudity modifier: {}",
+                         actor->GetDisplayFullName(), andScore);
             return andScore;
         }
 
         // Fall back to legacy nudity detection
         if (IsActorNudeLegacy(actor)) {
             float nudeBaseline = settings->GetNudeArousalBaseline();
-            logger::debug("Actor {:08X} using legacy nude baseline: {}", actor->formID, nudeBaseline);
+            logger::trace("Actor {} using legacy nude baseline: {}", actor->GetDisplayFullName(), nudeBaseline);
             return nudeBaseline;
         }
 
@@ -232,7 +232,7 @@ namespace Integrations
             // Get erotic armor baseline - Settings already has this functionality
             float eroticBaseline = settings->GetEroticArmorBaseline();
             if (eroticBaseline > 0.0f) {
-                logger::debug("Actor {:08X} using erotic armor baseline: {}", actor->formID, eroticBaseline);
+                logger::trace("Actor {} using erotic armor baseline: {}", actor->GetDisplayFullName(), eroticBaseline);
                 return eroticBaseline;
             }
         }
@@ -342,16 +342,16 @@ namespace Integrations
         contributions.push_back(braContrib);         // [6] ShowingBra
         contributions.push_back(underwearContrib);   // [7] ShowingUnderwear
 
-            logger::debug("Actor {:08X} A.N.D. faction contributions: Nude:{:.1f}, Topless:{:.1f}, Bottomless:{:.1f}, Chest:{:.1f}, Ass:{:.1f}, Genitals:{:.1f}, Bra:{:.1f}, Underwear:{:.1f}",
-                         actor->formID,
+            logger::trace("Actor {} A.N.D. faction contributions: Nude:{:.1f}, Topless:{:.1f}, Bottomless:{:.1f}, Chest:{:.1f}, Ass:{:.1f}, Genitals:{:.1f}, Bra:{:.1f}, Underwear:{:.1f}",
+                         actor->GetDisplayFullName(),
                          contributions[0], contributions[1], contributions[2], contributions[3],
                          contributions[4], contributions[5], contributions[6], contributions[7]);
 
             return contributions;
         }
         catch (const std::exception& e) {
-            logger::error("GetANDFactionContributions: Exception caught for actor {:08X}: {}",
-                         actor->formID, e.what());
+            logger::error("GetANDFactionContributions: Exception caught for actor {}: {}",
+                         actor->GetDisplayFullName(), e.what());
             // Return empty vector on error
             return std::vector<float>();
         }

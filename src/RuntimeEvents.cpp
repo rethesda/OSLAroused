@@ -269,7 +269,7 @@ RE::BSEventNotifyControl RuntimeEvents::OnModCallbackEvent::ProcessEvent(const S
 
 	// Check if AND integration is enabled
 	if (Settings::GetSingleton()->GetUseANDIntegration() && Integrations::ANDIntegration::GetSingleton()->IsAvailable()) {
-		logger::info("Processing OSLA_ANDUpdate: AND factions recalculated, triggering arousal recalculation");
+		logger::debug("Processing OSLA_ANDUpdate: AND factions recalculated, triggering arousal recalculation");
 
 		// Get the arousal system (only OSL mode supports libido modifier cache)
 		auto& arousalSystem = ArousalManager::GetSingleton()->GetArousalSystem();
@@ -282,7 +282,7 @@ RE::BSEventNotifyControl RuntimeEvents::OnModCallbackEvent::ProcessEvent(const S
 				// Update player's libido cache
 				oslSystem->ActorLibidoModifiersUpdated(player);
 				float newBaseline = oslSystem->GetBaselineArousal(player); // Force baseline recalculation
-				logger::debug("OSLA_ANDUpdate: Updated player libido cache, new baseline arousal: {}", newBaseline);
+				logger::trace("OSLA_ANDUpdate: Updated player libido cache, new baseline arousal: {}", newBaseline);
 
 				// Update all nearby actors' libido cache
 				const auto nearbyActors = GetNearbyActorsInCell(player);
