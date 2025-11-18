@@ -39,7 +39,7 @@ namespace
 				"Global", std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true));
 		}
 		log->set_level(spdlog::level::debug);
-		log->flush_on(spdlog::level::trace);
+		log->flush_on(spdlog::level::warn);
 
 		spdlog::set_default_logger(std::move(log));
 		spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v");
