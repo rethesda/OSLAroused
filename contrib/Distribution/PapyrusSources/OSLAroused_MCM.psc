@@ -623,8 +623,7 @@ function IntegrationSettingsPage()
             ANDShowingUnderwearOid = AddSliderOption("Showing Underwear", OSLArousedNativeConfig.GetANDFactionBaseline(7), "{1}")
         else
             ; Mod is enabled but not detected
-            AddTextOption("", "Advanced Nudity Detection mod not found!", OPTION_FLAG_DISABLED)
-            AddTextOption("", "Please install A.N.D. to use this feature", OPTION_FLAG_DISABLED)
+            AddTextOption("", "A.N.D. mod not found!", OPTION_FLAG_DISABLED)
         endif
     else
         AddTextOption("", "Enable to configure settings", OPTION_FLAG_DISABLED)
