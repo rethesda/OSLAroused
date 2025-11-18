@@ -58,6 +58,17 @@ int LibidoRateOfChangeOid
 int EnableStatBuffsOid
 int EnableSOSIntegrationOid
 
+;---- Integration Settings Properties ----
+int EnableANDIntegrationOid
+int ANDNudeOid
+int ANDToplessOid
+int ANDBottomlessOid
+int ANDShowingChestOid
+int ANDShowingAssOid
+int ANDShowingGenitalsOid
+int ANDShowingBraOid
+int ANDShowingUnderwearOid
+
 ;---- Puppet Properties ----
 Actor Property PuppetActor Auto
 int Property SetArousalOid Auto
@@ -131,6 +142,7 @@ Event OnConfigInit()
     Pages[5] = "$OSL_System"
     Pages[6] = "$OSL_BaselineStatus"
     Pages[7] = "$OSL_Help"
+    Pages[8] = "$OSL_IntegrationSettings"
 
 
     ArousalBarDisplayModeNames = new String[4]
@@ -206,6 +218,8 @@ Event OnPageReset(string page)
         BaselineStatusPage()
     elseif(page == "$OSL_Help")
         HelpPage()
+    elseif(page == "$OSL_IntegrationSettings")
+        IntegrationSettingsPage()
     endif
 EndEvent
 
@@ -335,9 +349,23 @@ function SettingsRightColumn()
         SceneParticipantBaselineOid = AddSliderOption("$OSL_Participating", Main.SceneParticipationBaselineIncrease, "{1}")
         VictimGainsArousalOid = AddToggleOption("$OSL_VictimGains", Main.VictimGainsArousal)
         SceneViewerBaselineOid = AddSliderOption("$OSL_Spectating", Main.SceneViewingBaselineIncrease, "{1}")
-        BeingNudeBaselineOid = AddSliderOption("$OSL_Nude", Main.NudityBaselineIncrease, "{1}")
+
+        ; Check if AND integration is enabled - if so, nudity baseline is controlled by AND settings
+        bool andEnabled = OSLArousedNativeConfig.IsANDIntegrationEnabled()
+        if(andEnabled)
+            BeingNudeBaselineOid = AddTextOption("$OSL_Nude", "See Integration Settings", OPTION_FLAG_DISABLED)
+        else
+            BeingNudeBaselineOid = AddSliderOption("$OSL_Nude", Main.NudityBaselineIncrease, "{1}")
+        endif
+
         ViewingNudeBaselineOid = AddSliderOption("$OSL_ViewingNude", Main.ViewingNudityBaselineIncrease, "{1}")
-        EroticArmorBaselineOid = AddSliderOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease, "{1}")
+
+        ; Erotic Armor also uses AND integration when enabled
+        if(andEnabled)
+            EroticArmorBaselineOid = AddTextOption("$OSL_EroticArmor", "See Integration Settings", OPTION_FLAG_DISABLED)
+        else
+            EroticArmorBaselineOid = AddSliderOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease, "{1}")
+        endif
         AddHeaderOption("$OSL_DeviceGains")
         DeviceBaselineGainTypeOid = AddMenuOption("$OSL_DeviceType", "")
         DeviceBaselineGainValueOid = AddSliderOption("$OSL_SelectedTypeGain", 0)
@@ -356,7 +384,6 @@ endfunction
 
 function SystemPage()
     AddTextOption("$OSL_Version", GetVersion(), OPTION_FLAG_DISABLED)
-    AddEmptyOption()
     AddHeaderOption("$OSL_FrameworkAdapters")
     If (Main.SexLabAdapterLoaded)
         AddTextOption("SexLab", "$OSL_Enabled")
@@ -372,7 +399,6 @@ function SystemPage()
     Else
         AddTextOption("OStim", "$OSL_Disabled", OPTION_FLAG_DISABLED)
     EndIf
-    AddEmptyOption()
     AddHeaderOption("$OSL_Compatibility")
     If (Main.InvalidSlaFound)
         SLAStubLoadedOid = AddTextOption("SexLab Aroused", "$OSL_InvalidInstall")
@@ -388,6 +414,22 @@ function SystemPage()
     Else
         OArousedStubLoadedOid = AddTextOption("OAroused", "$OSL_Disabled")
     EndIf
+
+    AddHeaderOption("Mod Integrations")
+    ; Check if AND (Advanced Nudity Detection) is detected and enabled
+    bool andDetected = OSLArousedNativeConfig.IsANDIntegrationEnabled()
+    bool andEnabled = OSLArousedNativeConfig.GetUseANDIntegration()
+
+    if(andDetected)
+        AddTextOption("Advanced Nudity Detection", "$OSL_Enabled")
+    elseif(andEnabled && !andDetected)
+        ; A.N.D. is enabled in settings but mod not detected
+        AddTextOption("Advanced Nudity Detection", "$OSL_NotDetected", OPTION_FLAG_DISABLED)
+    else
+        ; A.N.D. is disabled in settings
+        AddTextOption("Advanced Nudity Detection", "$OSL_Disabled", OPTION_FLAG_DISABLED)
+    endif
+
     SetCursorPosition(1)
     AddHeaderOption("$OSL_NativeData")
     DumpArousalData = AddTextOption("$OSL_DumpData", "RUN")
@@ -401,17 +443,30 @@ function BaselineStatusPage()
         return
     endif
     AddHeaderOption("$OSL_BaselineContributions")
-    if(OSLArousedNative.IsNaked(PuppetActor))
-        AddTextOption("$OSL_Nude", Main.NudityBaselineIncrease)
-        AddTextOption("$OSL_ViewingNude", "0")
-    elseif (OSLArousedNative.IsViewingNaked(PuppetActor))
-        AddTextOption("$OSL_Nude", "0")
+
+    ; Check if AND integration is available and enabled
+    bool andEnabled = OSLArousedNativeConfig.IsANDIntegrationEnabled()
+    if(!andEnabled)
+        ; Use legacy nudity detection if AND is not available or disabled
+        if(OSLArousedNative.IsNaked(PuppetActor))
+            AddTextOption("$OSL_Nude", Main.NudityBaselineIncrease)
+        else
+            AddTextOption("$OSL_Nude", "0")
+        endif
+        if(OSLArousedNative.IsWearingEroticArmor(PuppetActor))
+            AddTextOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease)
+        else
+            AddTextOption("$OSL_EroticArmor", "0")
+        endif
+    endif
+
+    if(OSLArousedNative.IsViewingNaked(PuppetActor))
         AddTextOption("$OSL_ViewingNude", Main.ViewingNudityBaselineIncrease)
     else
-        AddTextOption("$OSL_Nude", "0")
         AddTextOption("$OSL_ViewingNude", "0")
     endif
 
+    AddHeaderOption("$OSL_SceneContributions")
     if(OSLArousedNative.IsInScene(PuppetActor))
         AddTextOption("$OSL_Participating", Main.SceneParticipationBaselineIncrease)
         AddTextOption("$OSL_Spectating", "0")
@@ -423,15 +478,83 @@ function BaselineStatusPage()
         AddTextOption("$OSL_Spectating", "0")
     endif
 
-    if(OSLArousedNative.IsWearingEroticArmor(PuppetActor))
-        AddTextOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease)
-    else
-        AddTextOption("$OSL_EroticArmor", "0")
-    endif
 
-    AddTextOption("$OSL_WornDevicesGain", OSLArousedNative.WornDeviceBaselineGain(PuppetActor))
+
+    AddTextOption("$OSL_WornDevicesGain", OSLArousedNativeConfig.RoundFloat(OSLArousedNative.WornDeviceBaselineGain(PuppetActor), 1))
 
     SetCursorPosition(1)
+    if(andEnabled)
+        ; Get AND nudity score for the actor
+        float andScore = OSLArousedNative.GetANDNudityScore(PuppetActor)
+
+        ; Show AND nudity information
+        AddHeaderOption("Advanced Nudity Detection")
+        AddTextOption("Total Nudity Contribution", andScore as int)
+
+        ; Get and display individual faction contributions
+        float[] factionContributions = OSLArousedNative.GetANDFactionContributions(PuppetActor)
+        if(factionContributions.Length >= 8)
+            AddHeaderOption("Individual Contributions")
+
+            ; Display each faction contribution value
+            ; [0] = Nude contribution (0-50)
+            if(factionContributions[0] > 0)
+                AddTextOption("Nude", "+" + factionContributions[0] as int)
+            else
+                AddTextOption("Nude", "0", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [1] = Topless contribution (0-20)
+            if(factionContributions[1] > 0)
+                AddTextOption("Topless", "+" + factionContributions[1] as int)
+            else
+                AddTextOption("Topless", "0", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [2] = Bottomless contribution (0-30)
+            if(factionContributions[2] > 0)
+                AddTextOption("Bottomless", "+" + factionContributions[2] as int)
+            else
+                AddTextOption("Bottomless", "0", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [3] = ShowingChest contribution (0-12)
+            if(factionContributions[3] > 0)
+                AddTextOption("Showing Chest", "+" + factionContributions[3] as int)
+            else
+                AddTextOption("Showing Chest", "0", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [4] = ShowingAss contribution (0-8)
+            if(factionContributions[4] > 0)
+                AddTextOption("Showing Ass", "+" + factionContributions[4] as int)
+            else
+                AddTextOption("Showing Ass", "0", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [5] = ShowingGenitals contribution (0-15)
+            if(factionContributions[5] > 0)
+                AddTextOption("Showing Genitals", "+" + factionContributions[5] as int)
+            else
+                AddTextOption("Showing Genitals", "0", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [6] = ShowingBra contribution (0-8)
+            if(factionContributions[6] > 0)
+                AddTextOption("Showing Bra", "+" + factionContributions[6] as int)
+            else
+                AddTextOption("Showing Bra", "0", OPTION_FLAG_DISABLED)
+            endif
+
+            ; [7] = ShowingUnderwear contribution (0-8)
+            if(factionContributions[7] > 0)
+                AddTextOption("Showing Underwear", "+" + factionContributions[7] as int)
+            else
+                AddTextOption("Showing Underwear", "0", OPTION_FLAG_DISABLED)
+            endif
+        endif
+    endif
+
     int[] activeDeviceTypeIds = OSLArousedNativeActor.GetActiveDeviceTypeIds(Game.GetPlayer())
     if(activeDeviceTypeIds.Length > 0)
         AddHeaderOption("$OSL_DetectedDevices")
@@ -460,6 +583,58 @@ function HelpPage()
     HelpLowerArousalOid = AddTextOption("$OSL_LowerArousal", "$OSL_ClickToRead")
     HelpGainBaselineOid = AddTextOption("$OSL_RaiseBaseline", "$OSL_ClickToRead")
     HelpLowerBaselineOid = AddTextOption("$OSL_LowerBaseline", "$OSL_ClickToRead")
+endfunction
+
+function IntegrationSettingsPage()
+    ; Check if AND is available (installed and detected)
+    ; IsANDIntegrationEnabled returns true only if both the mod is detected AND enabled in settings
+    bool andEnabledAndAvailable = OSLArousedNativeConfig.IsANDIntegrationEnabled()
+    bool andEnabled = OSLArousedNativeConfig.GetUseANDIntegration()
+
+    ; A.N.D. Integration Settings
+    AddHeaderOption("Advanced Nudity Detection (A.N.D.)")
+    ; Show detection status
+    if(andEnabledAndAvailable)
+        AddTextOption("Status:", "Detected and Enabled")
+    elseif(!andEnabled)
+        AddTextOption("Status:", "Disabled", OPTION_FLAG_DISABLED)
+    else
+        AddTextOption("Status:", "Not Installed", OPTION_FLAG_DISABLED)
+    endif
+
+    ; Enable/Disable toggle - always show this so users can toggle even if mod not detected
+    EnableANDIntegrationOid = AddToggleOption("Enable A.N.D. Integration", andEnabled)
+
+    if(andEnabled)
+        if(andEnabledAndAvailable)
+            ; Individual baseline settings
+            AddHeaderOption("Individual Contributions")
+
+            ; Left column - Major states
+            ANDNudeOid = AddSliderOption("Nude", OSLArousedNativeConfig.GetANDFactionBaseline(0), "{1}")
+            ANDToplessOid = AddSliderOption("Topless", OSLArousedNativeConfig.GetANDFactionBaseline(1), "{1}")
+            ANDBottomlessOid = AddSliderOption("Bottomless", OSLArousedNativeConfig.GetANDFactionBaseline(2), "{1}")
+            ANDShowingChestOid = AddSliderOption("Showing Chest", OSLArousedNativeConfig.GetANDFactionBaseline(3), "{1}")
+
+            ; Right column - Minor states
+            ANDShowingAssOid = AddSliderOption("Showing Ass", OSLArousedNativeConfig.GetANDFactionBaseline(4), "{1}")
+            ANDShowingGenitalsOid = AddSliderOption("Showing Genitals", OSLArousedNativeConfig.GetANDFactionBaseline(5), "{1}")
+            ANDShowingBraOid = AddSliderOption("Showing Bra", OSLArousedNativeConfig.GetANDFactionBaseline(6), "{1}")
+            ANDShowingUnderwearOid = AddSliderOption("Showing Underwear", OSLArousedNativeConfig.GetANDFactionBaseline(7), "{1}")
+        else
+            ; Mod is enabled but not detected
+            AddTextOption("", "A.N.D. mod not found!", OPTION_FLAG_DISABLED)
+        endif
+    else
+        AddTextOption("", "Enable to configure settings", OPTION_FLAG_DISABLED)
+    endif
+
+    ; Future integrations can be added here
+    ; if(deviousDevicesAvailable)
+    ;     AddEmptyOption()
+    ;     AddHeaderOption("Devious Devices")
+    ;     ...
+    ; endif
 endfunction
 
 event OnOptionSelect(int optionId)
@@ -513,6 +688,14 @@ event OnOptionSelect(int optionId)
             bool bIsExhibitionist = !OSLArousedNative.IsActorExhibitionist(PuppetActor)
             SetToggleOptionValue(IsExhibitionistOid, bIsExhibitionist)
             OSLArousedNative.SetActorExhibitionist(PuppetActor, bIsExhibitionist)
+        endif
+    ElseIf(CurrentPage == "$OSL_IntegrationSettings")
+        if(optionId == EnableANDIntegrationOid)
+            bool newState = !OSLArousedNativeConfig.GetUseANDIntegration()
+            OSLArousedNativeConfig.SetUseANDIntegration(newState)
+            SetToggleOptionValue(EnableANDIntegrationOid, newState)
+            ; Force page refresh to show/hide settings
+            ForcePageReset()
         endif
     ElseIf(CurrentPage == "$OSL_Help")
         if(optionId == HelpArousalModeOid)
@@ -893,6 +1076,48 @@ event OnOptionSliderOpen(int option)
             SetSliderDialogInterval(0.5)
             SetSliderDialogRange(0, 50)
         endif
+    elseif(currentPage == "$OSL_IntegrationSettings")
+        if(option == ANDNudeOid)
+            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(0))
+            SetSliderDialogDefaultValue(50.0)
+            SetSliderDialogRange(0, 100)
+            SetSliderDialogInterval(1)
+        elseif(option == ANDToplessOid)
+            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(1))
+            SetSliderDialogDefaultValue(20.0)
+            SetSliderDialogRange(0, 100)
+            SetSliderDialogInterval(1)
+        elseif(option == ANDBottomlessOid)
+            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(2))
+            SetSliderDialogDefaultValue(30.0)
+            SetSliderDialogRange(0, 100)
+            SetSliderDialogInterval(1)
+        elseif(option == ANDShowingChestOid)
+            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(3))
+            SetSliderDialogDefaultValue(12.0)
+            SetSliderDialogRange(0, 100)
+            SetSliderDialogInterval(1)
+        elseif(option == ANDShowingAssOid)
+            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(4))
+            SetSliderDialogDefaultValue(8.0)
+            SetSliderDialogRange(0, 100)
+            SetSliderDialogInterval(1)
+        elseif(option == ANDShowingGenitalsOid)
+            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(5))
+            SetSliderDialogDefaultValue(15.0)
+            SetSliderDialogRange(0, 100)
+            SetSliderDialogInterval(1)
+        elseif(option == ANDShowingBraOid)
+            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(6))
+            SetSliderDialogDefaultValue(8.0)
+            SetSliderDialogRange(0, 100)
+            SetSliderDialogInterval(1)
+        elseif(option == ANDShowingUnderwearOid)
+            SetSliderDialogStartValue(OSLArousedNativeConfig.GetANDFactionBaseline(7))
+            SetSliderDialogDefaultValue(8.0)
+            SetSliderDialogRange(0, 100)
+            SetSliderDialogInterval(1)
+        endif
     endif
 endevent
 
@@ -976,6 +1201,32 @@ event OnOptionSliderAccept(int option, float value)
         elseif(option == LibidoRateOfChangeOid)
             Main.SetLibidoChangeRate(value)
             SetSliderOptionValue(LibidoRateOfChangeOid, value, "{1}")
+        endif
+    elseif(currentPage == "$OSL_IntegrationSettings")
+        if(option == ANDNudeOid)
+            OSLArousedNativeConfig.SetANDFactionBaseline(0, value)
+            SetSliderOptionValue(ANDNudeOid, value, "{1}")
+        elseif(option == ANDToplessOid)
+            OSLArousedNativeConfig.SetANDFactionBaseline(1, value)
+            SetSliderOptionValue(ANDToplessOid, value, "{1}")
+        elseif(option == ANDBottomlessOid)
+            OSLArousedNativeConfig.SetANDFactionBaseline(2, value)
+            SetSliderOptionValue(ANDBottomlessOid, value, "{1}")
+        elseif(option == ANDShowingChestOid)
+            OSLArousedNativeConfig.SetANDFactionBaseline(3, value)
+            SetSliderOptionValue(ANDShowingChestOid, value, "{1}")
+        elseif(option == ANDShowingAssOid)
+            OSLArousedNativeConfig.SetANDFactionBaseline(4, value)
+            SetSliderOptionValue(ANDShowingAssOid, value, "{1}")
+        elseif(option == ANDShowingGenitalsOid)
+            OSLArousedNativeConfig.SetANDFactionBaseline(5, value)
+            SetSliderOptionValue(ANDShowingGenitalsOid, value, "{1}")
+        elseif(option == ANDShowingBraOid)
+            OSLArousedNativeConfig.SetANDFactionBaseline(6, value)
+            SetSliderOptionValue(ANDShowingBraOid, value, "{1}")
+        elseif(option == ANDShowingUnderwearOid)
+            OSLArousedNativeConfig.SetANDFactionBaseline(7, value)
+            SetSliderOptionValue(ANDShowingUnderwearOid, value, "{1}")
         endif
     endif
 endevent

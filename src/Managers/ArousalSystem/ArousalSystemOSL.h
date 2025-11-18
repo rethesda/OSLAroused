@@ -27,8 +27,9 @@ public:
 	float ModifyArousalMultiplier(RE::Actor* actorRef, float value) override;
 
 	float GetBaselineArousal(RE::Actor* actorRef) override;
-	
+
 	void ActorLibidoModifiersUpdated(RE::Actor* actorRef);
+	void ClearAllLibidoModifiers();
 private:
 
 	float UpdateActorLibido(RE::Actor* actorRef, float gameHoursPassed, float targetLibido);

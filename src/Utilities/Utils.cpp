@@ -8,7 +8,7 @@ RE::FormID Utilities::Forms::ResolveFormId(uint32_t modIndex, RE::FormID rawForm
 		return (rawFormId & 0x00FFFFFF) | (((uint32_t)modIndex) << 24);
 	} else if (modIndex > 0xFF) {
 		//ESL FLag
-		return (modIndex << 12) | (rawFormId & 0x00000FFF);
+		return 0xFE000000  | (modIndex << 12) | (rawFormId & 0xFFF);
 	}
 	return 0;
 }

@@ -15,6 +15,13 @@ namespace PapyrusConfig
 
 	void SetEroticArmorBaseline(RE::StaticFunctionTag* base, float newVal, RE::BGSKeyword* keyword);
 
+	// A.N.D. Integration functions
+	void SetUseANDIntegration(RE::StaticFunctionTag* base, bool enabled);
+	bool GetUseANDIntegration(RE::StaticFunctionTag* base);
+	bool IsANDIntegrationEnabled(RE::StaticFunctionTag* base);
+	void SetANDFactionBaseline(RE::StaticFunctionTag* base, int factionIndex, float value);
+	float GetANDFactionBaseline(RE::StaticFunctionTag* base, int factionIndex);
+
 	void SetDeviceTypesBaseline1(RE::StaticFunctionTag* base, float belt, float collar, float legCuffs, float armCuffs, float bra, float gag, float p1, float p2, float blindfold, float harness);
 	void SetDeviceTypesBaseline2(RE::StaticFunctionTag* base, float plugVag, float plugAnal, float corset, float boots, float gloves, float hood, float suit, float heavyBondage, float bondageMittens);
 	void SetDeviceTypeBaseline(RE::StaticFunctionTag* base, int deviceTypeId, float newVal);
@@ -27,6 +34,9 @@ namespace PapyrusConfig
 	void SetSLADefaultExposureRate(RE::StaticFunctionTag* base, float newVal);
 
 	float GetUpdateIntervalRealTimeSeconds(RE::StaticFunctionTag* base);
+
+	// Utilities
+	RE::BSFixedString RoundFloat(RE::StaticFunctionTag* base, float value, int decimals);
 
 	bool RegisterFunctions(RE::BSScript::IVirtualMachine* vm);
 }

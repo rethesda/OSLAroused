@@ -1,4 +1,6 @@
 #pragma once
+#include "Integrations/ANDFactionIndices.h"
+
 using Lock = std::recursive_mutex;
 using Locker = std::lock_guard<Lock>;
 
@@ -181,15 +183,72 @@ public:
 		m_EroticArmorBaseline = newVal;
 		m_EroticArmorKeyword = keyword;
 	}
+	RE::BGSKeyword* GetEroticArmorKeyword() const
+	{
+		Locker locker(m_Lock);
+		return m_EroticArmorKeyword;
+	}
+
+	// Extended method for getting erotic armor baseline by keyword FormID
 	float GetEroticArmorBaseline() const
 	{
 		Locker locker(m_Lock);
 		return m_EroticArmorBaseline;
 	}
-	RE::BGSKeyword* GetEroticArmorKeyword() const
+
+	// A.N.D. Integration Settings
+	void SetUseANDIntegration(bool newVal)
 	{
 		Locker locker(m_Lock);
-		return m_EroticArmorKeyword;
+		m_UseANDIntegration = newVal;
+	}
+	bool GetUseANDIntegration() const
+	{
+		Locker locker(m_Lock);
+		return m_UseANDIntegration;
+	}
+
+	// A.N.D. Individual faction baseline values
+	struct ANDFactionBaselines {
+		float Nude = 50.0f;           
+		float Topless = 20.0f;        
+		float Bottomless = 30.0f;     
+		float ShowingChest = 12.0f;   
+		float ShowingAss = 8.0f;      
+		float ShowingGenitals = 15.0f;
+		float ShowingBra = 8.0f;      
+		float ShowingUnderwear = 8.0f;
+	};
+
+	void SetANDFactionBaselines(const ANDFactionBaselines& baselines)
+	{
+		Locker locker(m_Lock);
+		m_ANDFactionBaselines = baselines;
+	}
+
+	ANDFactionBaselines GetANDFactionBaselines() const
+	{
+		Locker locker(m_Lock);
+		return m_ANDFactionBaselines;
+	}
+
+	void SetANDFactionBaseline(int index, float value);
+
+	float GetANDFactionBaseline(int index) const
+	{
+		using namespace Integrations::ANDFactionIndex;
+		Locker locker(m_Lock);
+		switch (index) {
+		case NUDE: return m_ANDFactionBaselines.Nude;
+		case TOPLESS: return m_ANDFactionBaselines.Topless;
+		case BOTTOMLESS: return m_ANDFactionBaselines.Bottomless;
+		case SHOWING_CHEST: return m_ANDFactionBaselines.ShowingChest;
+		case SHOWING_ASS: return m_ANDFactionBaselines.ShowingAss;
+		case SHOWING_GENITALS: return m_ANDFactionBaselines.ShowingGenitals;
+		case SHOWING_BRA: return m_ANDFactionBaselines.ShowingBra;
+		case SHOWING_UNDERWEAR: return m_ANDFactionBaselines.ShowingUnderwear;
+		default: return 0.0f;
+		}
 	}
 
 	float GetTimeRateHalfLife() const
@@ -245,6 +304,9 @@ private:
 	float m_EroticArmorBaseline = 20.f;
 	RE::BGSKeyword* m_EroticArmorKeyword = nullptr;
 
+	// A.N.D. Integration settings
+	bool m_UseANDIntegration = true;  // Default true if A.N.D. is present
+	ANDFactionBaselines m_ANDFactionBaselines;  // Individual faction baseline values
 
 	//SLA property
 	float m_TimeRateHalfLife = 2.f;

@@ -18,6 +18,24 @@ namespace RuntimeEvents
 			return true;
 		}
 	};
+
+	class OnModCallbackEvent : public RE::BSTEventSink<SKSE::ModCallbackEvent>
+	{
+		virtual RE::BSEventNotifyControl ProcessEvent(const SKSE::ModCallbackEvent* callbackEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override;
+
+	public:
+		static bool RegisterEvent() {
+			static OnModCallbackEvent g_ModCallbackEventHandler;
+			auto modCallbackEventSource = SKSE::GetModCallbackEventSource();
+			if(!modCallbackEventSource) {
+				logger::error("Failed to get ModCallbackEventSource for OnModCallbackEvent registration");
+				return false;
+			}
+
+			modCallbackEventSource->AddEventSink(&g_ModCallbackEventHandler);
+			return true;
+		}
+	};
 }
 
 namespace WorldChecks

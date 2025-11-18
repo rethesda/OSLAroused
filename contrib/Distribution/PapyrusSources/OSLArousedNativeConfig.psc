@@ -40,3 +40,16 @@ function SetSLATimeRateHalfLife(float newVal) global native
 function SetSLADefaultExposureRate(float newVal) global native
 
 float function GetUpdateIntervalRealTimeSeconds() global native
+
+;A.N.D. Integration Settings
+function SetUseANDIntegration(bool enabled) global native
+bool function GetUseANDIntegration() global native
+bool function IsANDIntegrationEnabled() global native
+
+;A.N.D. Faction Baseline Settings
+;Faction indices: 0=Nude, 1=Topless, 2=Bottomless, 3=ShowingChest, 4=ShowingAss, 5=ShowingGenitals, 6=ShowingBra, 7=ShowingUnderwear
+function SetANDFactionBaseline(int factionIndex, float value) global native
+float function GetANDFactionBaseline(int factionIndex) global native
+
+; Utilities
+String function RoundFloat(float value, int decimals) global native

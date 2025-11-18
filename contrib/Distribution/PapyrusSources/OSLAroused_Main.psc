@@ -94,6 +94,9 @@ EndEvent
 Function OnGameLoaded()
 	RegisterForModEvent("OSLA_ActorArousalUpdated", "OnActorArousalUpdated")
 	RegisterForModEvent("OSLA_ActorNakedUpdated", "OnActorNakedUpdated")
+	
+	;Need to re-emit AdvancedNudityDetectionUpdate using SendModEvent syntax to recieve in skse dll
+	RegisterForModEvent("AdvancedNudityDetectionUpdate", "OnANDNudityUpdated")
 	InitializeDeviceSettings()
 
 	SlaStubLoaded = false
@@ -188,6 +191,10 @@ event OnActorArousalUpdated(string eventName, string strArg, float newArousal, F
 	endif
 
 	UpdateSOSPosition(act, newArousal)
+endevent
+
+event OnANDNudityUpdated()
+	SendModEvent("OSLA_ANDUpdate")
 endevent
 
 event OnActorNakedUpdated(string eventName, string strArg, float actorNakedFloat, Form sender)

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <functional>
-#include <chrono>
-
 namespace Utilities
 {
 	class Ticker

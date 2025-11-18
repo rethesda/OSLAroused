@@ -6,7 +6,7 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ########################################################################################################################
 project(
         OSLAroused
-        VERSION 2.7.1
+        VERSION 2.8.0
         DESCRIPTION "High-Performance Arousal Framework. Support for both Sexlab and OStim."
         LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
@@ -38,7 +38,10 @@ set(tests
         test/test_LRUCache.cpp
         test/test_SLAExposure.cpp
         test/test_OSLArousal.cpp
-        test/test_PersistedData.cpp)
+        test/test_PersistedData.cpp
+        test/test_ANDIntegration.cpp
+        test/test_SLA_AND_Integration.cpp
+        test/test_OSL_AND_Integration.cpp)
 
 
 source_group(
@@ -100,13 +103,19 @@ if(BUILD_TESTS)
     add_executable(
             ${PROJECT_NAME}Tests
             ${headers}
+            ${sources}
             ${tests})
 
     target_link_libraries(
             ${PROJECT_NAME}Tests
             PRIVATE
-            ${PROJECT_NAME}
+            CommonLibSSE::CommonLibSSE
             Catch2::Catch2WithMain)
+
+    target_include_directories(${PROJECT_NAME}Tests
+            PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>)
 
     target_precompile_headers(${PROJECT_NAME}Tests
             PRIVATE

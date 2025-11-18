@@ -9,6 +9,7 @@
 #include "Utilities/Utils.h"
 #include "Config.h"
 #include "Managers/ArousalManager.h"
+#include "Integrations/ANDIntegration.h"
 
 using namespace RE::BSScript;
 using namespace SKSE::log;
@@ -38,7 +39,7 @@ namespace
 				"Global", std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true));
 		}
 		log->set_level(spdlog::level::debug);
-		log->flush_on(spdlog::level::trace);
+		log->flush_on(spdlog::level::warn);
 
 		spdlog::set_default_logger(std::move(log));
 		spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v");
@@ -71,8 +72,11 @@ namespace
 			switch (message->type) {
 			case SKSE::MessagingInterface::kDataLoaded:  // All ESM/ESL/ESP plugins have loaded, main menu is now active
 				RuntimeEvents::OnEquipEvent::RegisterEvent();
+				RuntimeEvents::OnModCallbackEvent::RegisterEvent();
 				Config::GetSingleton()->LoadINIs();
 				Utilities::Factions::GetSingleton()->Initialize();
+				// Initialize A.N.D. Integration after config is loaded
+				Integrations::ANDIntegration::GetSingleton()->Initialize();
 				WorldChecks::ArousalUpdateTicker::GetSingleton()->Start();
 				break;
 			case SKSE::MessagingInterface::kNewGame:

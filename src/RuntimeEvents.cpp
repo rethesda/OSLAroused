@@ -1,11 +1,14 @@
 #include "RuntimeEvents.h"
 #include "Settings.h"
 #include "Managers/ArousalManager.h"
+#include "Managers/ArousalSystem/ArousalSystemOSL.h"
 #include "Managers/SceneManager.h"
 #include "Managers/ActorStateManager.h"
 #include "Papyrus/Papyrus.h"
 
 #include "Integrations/DevicesIntegration.h"
+#include "Integrations/ANDIntegration.h"
+#include "Integrations/ANDFactionIndices.h"
 
 #include "Utilities/Utils.h"
 
@@ -53,6 +56,7 @@ RE::BSEventNotifyControl RuntimeEvents::OnEquipEvent::ProcessEvent(const RE::TES
 	}
 	return RE::BSEventNotifyControl::kContinue;
 }
+
 
 std::vector<RE::ActorHandle> GetNearbyActorsInCell(RE::Actor* source);
 
@@ -111,11 +115,14 @@ void WorldChecks::ArousalUpdateLoop()
 		WorldChecks::ArousalUpdateTicker::GetSingleton()->LastNearbyArousalUpdateGameTime = curHours;
 	}
 
-	
-	std::set<RE::Actor*> spectatingActors;
+
+	// Map of spectator -> maximum nudity score they're viewing
+	std::map<RE::Actor*, float> spectatorNudityScores;
 	float scanDistance = Settings::GetSingleton()->GetScanDistance();
 	const auto nearbyActors = GetNearbyActorsInCell(player);
 	const auto actorStateManager = ActorStateManager::GetSingleton();
+	const bool useANDIntegration = Settings::GetSingleton()->GetUseANDIntegration() &&
+	                               Integrations::ANDIntegration::GetSingleton()->IsAvailable();
 
 	for (const auto actorHandle : nearbyActors) {
 		auto actorPtr = actorHandle.get();
@@ -126,18 +133,49 @@ void WorldChecks::ArousalUpdateLoop()
 		if (!actor) {
 			continue;
 		}
-		//If the actor is naked, then get nearby spectators to update spectator array
-		if (actorStateManager->IsHumanoidActor(actor) && actorStateManager->GetActorNaked(actor)) {
-			logger::trace("ArousalUpdateLoop: Actor {} is naked", actor->GetDisplayFullName());
+
+		// Check if actor is naked or partially nude
+		bool isNakedOrPartiallyNude = false;
+		float nudityScore = 0.0f;
+
+		// If AND integration is enabled, use it for more sophisticated nudity detection
+		if (useANDIntegration) {
+			nudityScore = Integrations::ANDIntegration::GetSingleton()->GetANDNudityScore(actor);
+			isNakedOrPartiallyNude = (nudityScore > 0.0f);
+			if (isNakedOrPartiallyNude) {
+				logger::trace("ArousalUpdateLoop: Actor {} has AND nudity score {}",
+				             actor->GetDisplayFullName(), nudityScore);
+			}
+		} else {
+			// Fallback to legacy binary naked check
+			isNakedOrPartiallyNude = actorStateManager->GetActorNaked(actor);
+			if (isNakedOrPartiallyNude) {
+				// For legacy mode, treat as full nudity (use configured Nude baseline)
+				nudityScore = Settings::GetSingleton()->GetANDFactionBaseline(Integrations::ANDFactionIndex::NUDE);
+				logger::trace("ArousalUpdateLoop: Actor {} is naked (legacy check)",
+				             actor->GetDisplayFullName());
+			}
+		}
+
+		// If the actor is naked or partially nude, get nearby spectators to update spectator array
+		if (actorStateManager->IsHumanoidActor(actor) && isNakedOrPartiallyNude) {
 			const auto spectators = GetNearbySpectatingActors(actor, scanDistance);
 			for (const auto spectator : spectators) {
-				spectatingActors.insert(spectator);
+				// Track the maximum nudity score this spectator is viewing
+				auto it = spectatorNudityScores.find(spectator);
+				if (it == spectatorNudityScores.end()) {
+					spectatorNudityScores[spectator] = nudityScore;
+				} else {
+					spectatorNudityScores[spectator] = std::max(it->second, nudityScore);
+				}
+
+				// HandleSpectatingNaked already scales gains based on AND score internally (SLA mode only)
 				ArousalManager::GetSingleton()->GetArousalSystem().HandleSpectatingNaked(spectator, actor, elapsedGameTimeSinceLastCheck);
 			}
 		}
 	}
 
-	ActorStateManager::GetSingleton()->UpdateActorsSpectating(spectatingActors);
+	ActorStateManager::GetSingleton()->UpdateActorsSpectating(spectatorNudityScores);
 
 	if (performNearbyArousalUpdates) {
 		for (const auto actorHandle : nearbyActors) {
@@ -212,4 +250,56 @@ std::vector<RE::Actor*> GetNearbySpectatingActors(RE::Actor* source, float radiu
 	});
 
 	return nearbyActors;
+}
+
+
+
+RE::BSEventNotifyControl RuntimeEvents::OnModCallbackEvent::ProcessEvent(const SKSE::ModCallbackEvent* callbackEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*)
+{
+	if (!callbackEvent) {
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	auto eventName = callbackEvent->eventName.c_str();
+	if (!eventName || !std::strcmp(eventName, "OSLA_ANDUpdate") == 0) {
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	logger::debug("OnModCallbackEvent: Received ModCallbackEvent: EventName: {}", eventName);
+
+	// Check if AND integration is enabled
+	if (Settings::GetSingleton()->GetUseANDIntegration() && Integrations::ANDIntegration::GetSingleton()->IsAvailable()) {
+		logger::info("Processing OSLA_ANDUpdate: AND factions recalculated, triggering arousal recalculation");
+
+		// Get the arousal system (only OSL mode supports libido modifier cache)
+		auto& arousalSystem = ArousalManager::GetSingleton()->GetArousalSystem();
+		if (arousalSystem.GetMode() == IArousalSystem::ArousalMode::kOSL) {
+			auto* oslSystem = static_cast<ArousalSystemOSL*>(&arousalSystem);
+
+			// Get player and nearby actors to update their arousal
+			auto player = RE::PlayerCharacter::GetSingleton();
+			if (player) {
+				// Update player's libido cache
+				oslSystem->ActorLibidoModifiersUpdated(player);
+				float newBaseline = oslSystem->GetBaselineArousal(player); // Force baseline recalculation
+				logger::debug("OSLA_ANDUpdate: Updated player libido cache, new baseline arousal: {}", newBaseline);
+
+				// Update all nearby actors' libido cache
+				const auto nearbyActors = GetNearbyActorsInCell(player);
+				for (const auto& actorHandle : nearbyActors) {
+					auto actorPtr = actorHandle.get();
+					if (actorPtr) {
+						auto actor = actorPtr.get();
+						if (actor && ActorStateManager::GetSingleton()->IsHumanoidActor(actor)) {
+							oslSystem->ActorLibidoModifiersUpdated(actor);
+						}
+					}
+				}
+
+				logger::debug("OSLA_ANDUpdate: Updated libido cache for {} nearby actors", nearbyActors.size());
+			}
+		}
+	}
+
+	return RE::BSEventNotifyControl::kContinue;
 }

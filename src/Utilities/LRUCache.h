@@ -1,10 +1,5 @@
 #pragma once
 
-#include <map>
-#include <list>
-#include <unordered_map>
-#include <mutex>
-
 #define LOG(msg) std::cout << msg << std::endl;
 
 namespace Utilities
@@ -66,6 +61,14 @@ namespace Utilities
 				m_CacheKeyTracker.erase((*it).second.second);
 				m_CacheData.erase(it);
 			}
+		}
+
+		//Clear entire cache - all items will be recalculated on next fetch
+		void ClearAll()
+		{
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			m_CacheKeyTracker.clear();
+			m_CacheData.clear();
 		}
 
 	private:

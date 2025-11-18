@@ -2,7 +2,9 @@
 #include "Settings.h"
 #include <Utilities/Utils.h>
 #include "Managers/ArousalManager.h"
+#include "Managers/ArousalSystem/ArousalSystemOSL.h"
 #include "PersistedData.h"
+#include "Integrations/ANDIntegration.h"
 
 void PapyrusConfig::SetMinLibidoValue(RE::StaticFunctionTag*, bool bPlayerVal, float newVal)
 {
@@ -26,12 +28,22 @@ void PapyrusConfig::SetSceneParticipantBaseline(RE::StaticFunctionTag*, float ne
 {
 	logger::trace("SetSceneParticipantBaseline: {}", newVal);
 	Settings::GetSingleton()->SetSceneParticipantBaseline(newVal);
+
+	// Clear cache when scene baseline changes
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 void PapyrusConfig::SetSceneViewingBaseline(RE::StaticFunctionTag*, float newVal)
 {
 	logger::trace("SetSceneViewingBaseline: {}", newVal);
 	Settings::GetSingleton()->SetSceneViewingBaseline(newVal);
+
+	// Clear cache when scene baseline changes
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 void PapyrusConfig::SetSceneVictimGainsArousal(RE::StaticFunctionTag*, bool newVal)
@@ -44,12 +56,22 @@ void PapyrusConfig::SetBeingNudeBaseline(RE::StaticFunctionTag*, float newVal)
 {
 	logger::trace("SetBeingNudeBaseline: {}", newVal);
 	Settings::GetSingleton()->SetNudeArousalBaseline(newVal);
+
+	// Clear cache when nude baseline changes
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 void PapyrusConfig::SetViewingNudeBaseline(RE::StaticFunctionTag*, float newVal)
 {
 	logger::trace("SetViewingNudeBaseline: {}", newVal);
 	Settings::GetSingleton()->SetNudeViewingBaseline(newVal);
+
+	// Clear cache when nude viewing baseline changes
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 void PapyrusConfig::SetEroticArmorBaseline(RE::StaticFunctionTag*, float newVal, RE::BGSKeyword* keyword)
@@ -61,6 +83,45 @@ void PapyrusConfig::SetEroticArmorBaseline(RE::StaticFunctionTag*, float newVal,
 	logger::trace("SetEroticArmorBaseline: {} {}", newVal, keyword->formID);
 
 	Settings::GetSingleton()->SetEroticArmorBaseline(newVal, keyword);
+}
+
+// A.N.D. Integration functions
+void PapyrusConfig::SetUseANDIntegration(RE::StaticFunctionTag*, bool enabled)
+{
+	logger::trace("SetUseANDIntegration: {}", enabled);
+	Settings::GetSingleton()->SetUseANDIntegration(enabled);
+}
+
+bool PapyrusConfig::GetUseANDIntegration(RE::StaticFunctionTag*)
+{
+	bool result = Settings::GetSingleton()->GetUseANDIntegration();
+	logger::trace("GetUseANDIntegration: {}", result);
+	return result;
+}
+
+bool PapyrusConfig::IsANDIntegrationEnabled(RE::StaticFunctionTag*)
+{
+	bool result = Integrations::ANDIntegration::GetSingleton()->IsAvailable() && Settings::GetSingleton()->GetUseANDIntegration();
+	return result;
+}
+
+void PapyrusConfig::SetANDFactionBaseline(RE::StaticFunctionTag*, int factionIndex, float value)
+{
+	logger::trace("SetANDFactionBaseline: index={}, value={}", factionIndex, value);
+	Settings::GetSingleton()->SetANDFactionBaseline(factionIndex, value);
+
+	// Clear libido modifier cache for OSL mode when A.N.D. baselines change
+	// This ensures all actors recalculate their baselines with the new settings
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
+}
+
+float PapyrusConfig::GetANDFactionBaseline(RE::StaticFunctionTag*, int factionIndex)
+{
+	float result = Settings::GetSingleton()->GetANDFactionBaseline(factionIndex);
+	logger::trace("GetANDFactionBaseline: index={}, result={}", factionIndex, result);
+	return result;
 }
 
 void PapyrusConfig::SetDeviceTypesBaseline1(RE::StaticFunctionTag*, float belt, float collar, float legCuffs, float armCuffs, float bra, float gag, float piercingsNipple, float piercingsVaginal, float blindfold, float harness)
@@ -189,6 +250,22 @@ float PapyrusConfig::GetUpdateIntervalRealTimeSeconds(RE::StaticFunctionTag* bas
 	return Utilities::GameTimeToRealSeconds(Settings::GetSingleton()->GetArousalUpdateInterval());
 }
 
+RE::BSFixedString PapyrusConfig::RoundFloat(RE::StaticFunctionTag* base, float value, int decimals)
+{
+	// Clamp decimals to something sane
+ 	if (decimals < 0) {
+		decimals = 0;
+	} else if (decimals > 6) {
+		decimals = 6;
+	}
+
+	std::stringstream ss;
+	ss << std::fixed << std::setprecision(decimals) << value;
+
+	// Convert std::string → BSFixedString
+	return RE::BSFixedString(ss.str());
+}
+
 bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 {
 	vm->RegisterFunction("SetMinLibidoValue", "OSLArousedNativeConfig", SetMinLibidoValue);
@@ -203,6 +280,13 @@ bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 
 	vm->RegisterFunction("SetEroticArmorBaseline", "OSLArousedNativeConfig", SetEroticArmorBaseline);
 
+	// Register A.N.D. Integration functions
+	vm->RegisterFunction("SetUseANDIntegration", "OSLArousedNativeConfig", SetUseANDIntegration);
+	vm->RegisterFunction("GetUseANDIntegration", "OSLArousedNativeConfig", GetUseANDIntegration);
+	vm->RegisterFunction("IsANDIntegrationEnabled", "OSLArousedNativeConfig", IsANDIntegrationEnabled);
+	vm->RegisterFunction("SetANDFactionBaseline", "OSLArousedNativeConfig", SetANDFactionBaseline);
+	vm->RegisterFunction("GetANDFactionBaseline", "OSLArousedNativeConfig", GetANDFactionBaseline);
+
 	vm->RegisterFunction("SetDeviceTypesBaseline1", "OSLArousedNativeConfig", SetDeviceTypesBaseline1);
 	vm->RegisterFunction("SetDeviceTypesBaseline2", "OSLArousedNativeConfig", SetDeviceTypesBaseline2);
 	vm->RegisterFunction("SetDeviceTypeBaseline", "OSLArousedNativeConfig", SetDeviceTypeBaseline);
@@ -215,5 +299,6 @@ bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 
 	vm->RegisterFunction("GetUpdateIntervalRealTimeSeconds", "OSLArousedNativeConfig", GetUpdateIntervalRealTimeSeconds);
 	
+	vm->RegisterFunction("RoundFloat", "OSLArousedNativeConfig", RoundFloat);
 	return true;
 }

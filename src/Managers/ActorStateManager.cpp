@@ -52,22 +52,52 @@ void ActorStateManager::ActorNakedStateChanged(RE::Actor* actorRef, bool newNake
 
 bool ActorStateManager::GetActorSpectatingNaked(RE::Actor* actorRef)
 {
-	if (const auto lastViewedGameTime = m_NakedSpectatingMap[actorRef]) {
-		if (RE::Calendar::GetSingleton()->GetCurrentGameTime() - lastViewedGameTime < 0.1f) {
+	if (!actorRef) {
+		return false;
+	}
+
+	auto it = m_NakedSpectatingMap.find(actorRef);
+	if (it != m_NakedSpectatingMap.end()) {
+		// Check if spectating is still recent (within 0.1 game hours)
+		float currentTime = RE::Calendar::GetSingleton()->GetCurrentGameTime();
+		if (currentTime - it->second.lastUpdateTime < 0.1f) {
 			return true;
 		}
 	}
 	return false;
 }
 
-void ActorStateManager::UpdateActorsSpectating(std::set<RE::Actor*> spectators)
+float ActorStateManager::GetSpectatingMaxNudityScore(RE::Actor* actorRef)
 {
-	//Remove any old spectators from map who are not in spectators set
-	//Need to do this to purge libido modifier cache
+	if (!actorRef) {
+		return 0.0f;
+	}
+
+	auto it = m_NakedSpectatingMap.find(actorRef);
+	if (it != m_NakedSpectatingMap.end()) {
+		// Check if spectating is still recent (within 0.1 game hours)
+		float currentTime = RE::Calendar::GetSingleton()->GetCurrentGameTime();
+		if (currentTime - it->second.lastUpdateTime < 0.1f) {
+			return it->second.maxNudityScore;
+		}
+	}
+	return 0.0f;
+}
+
+void ActorStateManager::UpdateActorsSpectating(std::map<RE::Actor*, float> spectatorNudityScores)
+{
+	float currentTime = RE::Calendar::GetSingleton()->GetCurrentGameTime();
+	const float timeoutThreshold = 0.1f; // 6 minutes at default timescale
+
+	// First pass: Remove spectators who are no longer actively viewing OR timed out
 	for (auto itr = m_NakedSpectatingMap.begin(); itr != m_NakedSpectatingMap.end();) {
-		if (!spectators.contains((*itr).first)) {
+		bool isStillSpectating = spectatorNudityScores.find(itr->first) != spectatorNudityScores.end();
+		bool isTimedOut = (currentTime - itr->second.lastUpdateTime) >= timeoutThreshold;
+
+		if (!isStillSpectating || isTimedOut) {
+			// Purge libido modifier cache for OSL mode
 			if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
-				oslSystem->ActorLibidoModifiersUpdated((*itr).first);
+				oslSystem->ActorLibidoModifiersUpdated(itr->first);
 			}
 			itr = m_NakedSpectatingMap.erase(itr);
 		} else {
@@ -75,11 +105,20 @@ void ActorStateManager::UpdateActorsSpectating(std::set<RE::Actor*> spectators)
 		}
 	}
 
-	float currentTime = RE::Calendar::GetSingleton()->GetCurrentGameTime();
-	for (const auto spectator : spectators) {
-		bool isNewSpectator = (m_NakedSpectatingMap.find(spectator) == m_NakedSpectatingMap.end());
-		m_NakedSpectatingMap[spectator] = currentTime;
-		if (isNewSpectator) {
+	// Second pass: Update or add active spectators
+	for (const auto& [spectator, maxNudityScore] : spectatorNudityScores) {
+		auto it = m_NakedSpectatingMap.find(spectator);
+		bool isNewSpectator = (it == m_NakedSpectatingMap.end());
+		float oldScore = isNewSpectator ? 0.0f : it->second.maxNudityScore;
+
+		// Update or create spectating data
+		SpectatingData data;
+		data.maxNudityScore = maxNudityScore;
+		data.lastUpdateTime = currentTime;
+		m_NakedSpectatingMap[spectator] = data;
+
+		// Invalidate cache if new spectator or if nudity score changed significantly (>5 points)
+		if (isNewSpectator || std::abs(maxNudityScore - oldScore) > 3.0f) {
 			if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
 				oslSystem->ActorLibidoModifiersUpdated(spectator);
 			}

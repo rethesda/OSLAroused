@@ -29,7 +29,8 @@ public:
 	void ActorNakedStateChanged(RE::Actor* actorRef, bool newNaked);
 
 	bool GetActorSpectatingNaked(RE::Actor* actorRef);
-	void UpdateActorsSpectating(std::set<RE::Actor*> spectators);
+	float GetSpectatingMaxNudityScore(RE::Actor* actorRef);
+	void UpdateActorsSpectating(std::map<RE::Actor*, float> spectatorNudityScores);
 
 	//Returns true if actor is non-creature, non-animal npc
 	bool IsHumanoidActor(RE::Actor* actorRef);
@@ -43,9 +44,14 @@ private:
 
 private:
 
+	struct SpectatingData {
+		float maxNudityScore;
+		float lastUpdateTime;
+	};
+
 	Utilities::LRUCache<RE::Actor*, bool> m_ActorNakedStateCache;
 
-	std::map<RE::Actor*, float> m_NakedSpectatingMap;
+	std::map<RE::Actor*, SpectatingData> m_NakedSpectatingMap;
 
 	RE::BGSKeyword* m_CreatureKeyword;
 	RE::BGSKeyword* m_AnimalKeyword;
