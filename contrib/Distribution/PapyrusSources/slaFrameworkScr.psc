@@ -202,9 +202,11 @@ Int Function GetGenderPreference(Actor akRef, Bool forConfig = False)
             return -1
         endif
 
-        SexLabFramework sexlab = SexLabUtil.GetAPI() 
-		;;;Credits to Doombell for this piece of code
-		int ratio = sexlab.Stats.GetSexuality(akRef)
+		float rawRatio = sslActorStats._GetSkill(akRef, 14) ;;14 is the sexuality skill ID
+        float ratio = 100
+        if rawRatio > 0.0
+            ratio = rawRatio as int
+        endif
 		if ratio > 65
 			res =  (-(akRef.GetLeveledActorBase().GetSex() - 1))
 		ElseIf ratio < 35
