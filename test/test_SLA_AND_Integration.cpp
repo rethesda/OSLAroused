@@ -220,7 +220,7 @@ TEST_CASE("SLA AND Integration - Time Scaling Combined with Nudity", "[SLA][AND]
         float updateInterval = 0.1f;
         float exposureScale = TestHelpers::CalculateSpectatingExposureScale(elapsedGameTime, updateInterval);
 
-        REQUIRE(exposureScale == 0.1f);
+        REQUIRE(exposureScale == Approx(0.1f));
 
         float baseExposure = 4.0f;
         float nudityScale = 0.16f;  // Showing underwear (8/50)
