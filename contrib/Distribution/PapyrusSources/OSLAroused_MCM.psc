@@ -309,7 +309,7 @@ endfunction
 
 function KeywordPage()
     AddHeaderOption("$OSL_KeywordManagement")
-    RegisterKeywordOid = AddInputOption("Register New Keyword", "Register", 0)
+    RegisterKeywordOid = AddInputOption("$OSL_RegisterNewKeyword", "$OSL_Register", 0)
     ArmorListMenuOid = AddMenuOption("$OSL_LoadArmorList", "")
     SetCursorPosition(1)
     int index = 0
@@ -353,7 +353,7 @@ function SettingsRightColumn()
         ; Check if AND integration is enabled - if so, nudity baseline is controlled by AND settings
         bool andEnabled = OSLArousedNativeConfig.IsANDIntegrationEnabled()
         if(andEnabled)
-            BeingNudeBaselineOid = AddTextOption("$OSL_Nude", "See Integration Settings", OPTION_FLAG_DISABLED)
+            BeingNudeBaselineOid = AddTextOption("$OSL_Nude", "$OSL_SeeIntegrationSettings", OPTION_FLAG_DISABLED)
         else
             BeingNudeBaselineOid = AddSliderOption("$OSL_Nude", Main.NudityBaselineIncrease, "{1}")
         endif
@@ -362,7 +362,7 @@ function SettingsRightColumn()
 
         ; Erotic Armor also uses AND integration when enabled
         if(andEnabled)
-            EroticArmorBaselineOid = AddTextOption("$OSL_EroticArmor", "See Integration Settings", OPTION_FLAG_DISABLED)
+            EroticArmorBaselineOid = AddTextOption("$OSL_EroticArmor", "$OSL_SeeIntegrationSettings", OPTION_FLAG_DISABLED)
         else
             EroticArmorBaselineOid = AddSliderOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease, "{1}")
         endif
@@ -415,19 +415,19 @@ function SystemPage()
         OArousedStubLoadedOid = AddTextOption("OAroused", "$OSL_Disabled")
     EndIf
 
-    AddHeaderOption("Mod Integrations")
+    AddHeaderOption("$OSL_ModIntegrations")
     ; Check if AND (Advanced Nudity Detection) is detected and enabled
     bool andDetected = OSLArousedNativeConfig.IsANDIntegrationEnabled()
     bool andEnabled = OSLArousedNativeConfig.GetUseANDIntegration()
 
     if(andDetected)
-        AddTextOption("Advanced Nudity Detection", "$OSL_Enabled")
+        AddTextOption("$OSL_AdvancedNudityDetection", "$OSL_Enabled")
     elseif(andEnabled && !andDetected)
         ; A.N.D. is enabled in settings but mod not detected
-        AddTextOption("Advanced Nudity Detection", "$OSL_NotDetected", OPTION_FLAG_DISABLED)
+        AddTextOption("$OSL_AdvancedNudityDetection", "$OSL_NotDetected", OPTION_FLAG_DISABLED)
     else
         ; A.N.D. is disabled in settings
-        AddTextOption("Advanced Nudity Detection", "$OSL_Disabled", OPTION_FLAG_DISABLED)
+        AddTextOption("$OSL_AdvancedNudityDetection", "$OSL_Disabled", OPTION_FLAG_DISABLED)
     endif
 
     SetCursorPosition(1)
@@ -488,69 +488,69 @@ function BaselineStatusPage()
         float andScore = OSLArousedNative.GetANDNudityScore(PuppetActor)
 
         ; Show AND nudity information
-        AddHeaderOption("Advanced Nudity Detection")
-        AddTextOption("Total Nudity Contribution", andScore as int)
+        AddHeaderOption("$OSL_AdvancedNudityDetection")
+        AddTextOption("$OSL_TotalNudityContribution", andScore as int)
 
         ; Get and display individual faction contributions
         float[] factionContributions = OSLArousedNative.GetANDFactionContributions(PuppetActor)
         if(factionContributions.Length >= 8)
-            AddHeaderOption("Individual Contributions")
+            AddHeaderOption("$OSL_IndividualContributions")
 
             ; Display each faction contribution value
             ; [0] = Nude contribution (0-50)
             if(factionContributions[0] > 0)
-                AddTextOption("Nude", "+" + factionContributions[0] as int)
+                AddTextOption("$OSL_ANDNude", "+" + factionContributions[0] as int)
             else
-                AddTextOption("Nude", "0", OPTION_FLAG_DISABLED)
+                AddTextOption("$OSL_ANDNude", "0", OPTION_FLAG_DISABLED)
             endif
 
             ; [1] = Topless contribution (0-20)
             if(factionContributions[1] > 0)
-                AddTextOption("Topless", "+" + factionContributions[1] as int)
+                AddTextOption("$OSL_ANDTopless", "+" + factionContributions[1] as int)
             else
-                AddTextOption("Topless", "0", OPTION_FLAG_DISABLED)
+                AddTextOption("$OSL_ANDTopless", "0", OPTION_FLAG_DISABLED)
             endif
 
             ; [2] = Bottomless contribution (0-30)
             if(factionContributions[2] > 0)
-                AddTextOption("Bottomless", "+" + factionContributions[2] as int)
+                AddTextOption("$OSL_ANDBottomless", "+" + factionContributions[2] as int)
             else
-                AddTextOption("Bottomless", "0", OPTION_FLAG_DISABLED)
+                AddTextOption("$OSL_ANDBottomless", "0", OPTION_FLAG_DISABLED)
             endif
 
             ; [3] = ShowingChest contribution (0-12)
             if(factionContributions[3] > 0)
-                AddTextOption("Showing Chest", "+" + factionContributions[3] as int)
+                AddTextOption("$OSL_ANDShowingChest", "+" + factionContributions[3] as int)
             else
-                AddTextOption("Showing Chest", "0", OPTION_FLAG_DISABLED)
+                AddTextOption("$OSL_ANDShowingChest", "0", OPTION_FLAG_DISABLED)
             endif
 
             ; [4] = ShowingAss contribution (0-8)
             if(factionContributions[4] > 0)
-                AddTextOption("Showing Ass", "+" + factionContributions[4] as int)
+                AddTextOption("$OSL_ANDShowingAss", "+" + factionContributions[4] as int)
             else
-                AddTextOption("Showing Ass", "0", OPTION_FLAG_DISABLED)
+                AddTextOption("$OSL_ANDShowingAss", "0", OPTION_FLAG_DISABLED)
             endif
 
             ; [5] = ShowingGenitals contribution (0-15)
             if(factionContributions[5] > 0)
-                AddTextOption("Showing Genitals", "+" + factionContributions[5] as int)
+                AddTextOption("$OSL_ANDShowingGenitals", "+" + factionContributions[5] as int)
             else
-                AddTextOption("Showing Genitals", "0", OPTION_FLAG_DISABLED)
+                AddTextOption("$OSL_ANDShowingGenitals", "0", OPTION_FLAG_DISABLED)
             endif
 
             ; [6] = ShowingBra contribution (0-8)
             if(factionContributions[6] > 0)
-                AddTextOption("Showing Bra", "+" + factionContributions[6] as int)
+                AddTextOption("$OSL_ANDShowingBra", "+" + factionContributions[6] as int)
             else
-                AddTextOption("Showing Bra", "0", OPTION_FLAG_DISABLED)
+                AddTextOption("$OSL_ANDShowingBra", "0", OPTION_FLAG_DISABLED)
             endif
 
             ; [7] = ShowingUnderwear contribution (0-8)
             if(factionContributions[7] > 0)
-                AddTextOption("Showing Underwear", "+" + factionContributions[7] as int)
+                AddTextOption("$OSL_ANDShowingUnderwear", "+" + factionContributions[7] as int)
             else
-                AddTextOption("Showing Underwear", "0", OPTION_FLAG_DISABLED)
+                AddTextOption("$OSL_ANDShowingUnderwear", "0", OPTION_FLAG_DISABLED)
             endif
         endif
     endif
@@ -592,41 +592,41 @@ function IntegrationSettingsPage()
     bool andEnabled = OSLArousedNativeConfig.GetUseANDIntegration()
 
     ; A.N.D. Integration Settings
-    AddHeaderOption("Advanced Nudity Detection (A.N.D.)")
+    AddHeaderOption("$OSL_ANDIntegrationHeader")
     ; Show detection status
     if(andEnabledAndAvailable)
-        AddTextOption("Status:", "Detected and Enabled")
+        AddTextOption("$OSL_Status", "$OSL_DetectedAndEnabled")
     elseif(!andEnabled)
-        AddTextOption("Status:", "Disabled", OPTION_FLAG_DISABLED)
+        AddTextOption("$OSL_Status", "$OSL_Disabled", OPTION_FLAG_DISABLED)
     else
-        AddTextOption("Status:", "Not Installed", OPTION_FLAG_DISABLED)
+        AddTextOption("$OSL_Status", "$OSL_NotInstalled", OPTION_FLAG_DISABLED)
     endif
 
     ; Enable/Disable toggle - always show this so users can toggle even if mod not detected
-    EnableANDIntegrationOid = AddToggleOption("Enable A.N.D. Integration", andEnabled)
+    EnableANDIntegrationOid = AddToggleOption("$OSL_EnableANDIntegration", andEnabled)
 
     if(andEnabled)
         if(andEnabledAndAvailable)
             ; Individual baseline settings
-            AddHeaderOption("Individual Contributions")
+            AddHeaderOption("$OSL_IndividualContributions")
 
             ; Left column - Major states
-            ANDNudeOid = AddSliderOption("Nude", OSLArousedNativeConfig.GetANDFactionBaseline(0), "{1}")
-            ANDToplessOid = AddSliderOption("Topless", OSLArousedNativeConfig.GetANDFactionBaseline(1), "{1}")
-            ANDBottomlessOid = AddSliderOption("Bottomless", OSLArousedNativeConfig.GetANDFactionBaseline(2), "{1}")
-            ANDShowingChestOid = AddSliderOption("Showing Chest", OSLArousedNativeConfig.GetANDFactionBaseline(3), "{1}")
+            ANDNudeOid = AddSliderOption("$OSL_ANDNude", OSLArousedNativeConfig.GetANDFactionBaseline(0), "{1}")
+            ANDToplessOid = AddSliderOption("$OSL_ANDTopless", OSLArousedNativeConfig.GetANDFactionBaseline(1), "{1}")
+            ANDBottomlessOid = AddSliderOption("$OSL_ANDBottomless", OSLArousedNativeConfig.GetANDFactionBaseline(2), "{1}")
+            ANDShowingChestOid = AddSliderOption("$OSL_ANDShowingChest", OSLArousedNativeConfig.GetANDFactionBaseline(3), "{1}")
 
             ; Right column - Minor states
-            ANDShowingAssOid = AddSliderOption("Showing Ass", OSLArousedNativeConfig.GetANDFactionBaseline(4), "{1}")
-            ANDShowingGenitalsOid = AddSliderOption("Showing Genitals", OSLArousedNativeConfig.GetANDFactionBaseline(5), "{1}")
-            ANDShowingBraOid = AddSliderOption("Showing Bra", OSLArousedNativeConfig.GetANDFactionBaseline(6), "{1}")
-            ANDShowingUnderwearOid = AddSliderOption("Showing Underwear", OSLArousedNativeConfig.GetANDFactionBaseline(7), "{1}")
+            ANDShowingAssOid = AddSliderOption("$OSL_ANDShowingAss", OSLArousedNativeConfig.GetANDFactionBaseline(4), "{1}")
+            ANDShowingGenitalsOid = AddSliderOption("$OSL_ANDShowingGenitals", OSLArousedNativeConfig.GetANDFactionBaseline(5), "{1}")
+            ANDShowingBraOid = AddSliderOption("$OSL_ANDShowingBra", OSLArousedNativeConfig.GetANDFactionBaseline(6), "{1}")
+            ANDShowingUnderwearOid = AddSliderOption("$OSL_ANDShowingUnderwear", OSLArousedNativeConfig.GetANDFactionBaseline(7), "{1}")
         else
             ; Mod is enabled but not detected
-            AddTextOption("", "A.N.D. mod not found!", OPTION_FLAG_DISABLED)
+            AddTextOption("", "$OSL_ANDModNotFound", OPTION_FLAG_DISABLED)
         endif
     else
-        AddTextOption("", "Enable to configure settings", OPTION_FLAG_DISABLED)
+        AddTextOption("", "$OSL_EnableToConfigureSettings", OPTION_FLAG_DISABLED)
     endif
 
     ; Future integrations can be added here
@@ -813,7 +813,7 @@ event OnOptionHighlight(int optionId)
         endif
     elseif(CurrentPage == "$OSL_Keywords")
         if(optionId == RegisterKeywordOid)
-            SetInfoText("Enter the Editor Id of the Keyword you wish to register to allow Adding/Removing from armor. (ex. SLA_ArmorPretty, SLA_ArmorSpendex, SLA_HasStockings, etc..)")
+            SetInfoText("$OSL_InfoRegisterKeyword")
         endif
     elseif(CurrentPage == "$OSL_Settings")
         if(optionId == MinLibidoPlayerOid)
@@ -1349,14 +1349,14 @@ event OnOptionInputAccept(int option, string inputVal)
     if(option == RegisterKeywordOid)
         ; First check if this keyword can be found
         if(!Keyword.GetKeyword(inputVal))
-            Debug.MessageBox("Keyword: " + inputVal + " not found. Please try again.")
+            Debug.MessageBox("$OSL_KeywordNotFound{" + inputVal + "}")
             return
         endif
 
         if(OSLArousedNative.RegisterNewKeyword(inputVal))
-            Debug.MessageBox("Keyword: " + inputVal + " Registered Successfully. Please save and load your game to see the new keyword in the list.")
+            Debug.MessageBox("$OSL_KeywordRegisteredSuccess{" + inputVal + "}")
         else
-            Debug.MessageBox("Keyword: " + inputVal + " Failed to Register. Please try again or Check OSLAroused.log file.")
+            Debug.MessageBox("$OSL_KeywordRegisteredFailed{" + inputVal + "}")
         endif
     endif
 endevent
