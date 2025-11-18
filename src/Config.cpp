@@ -57,16 +57,16 @@ bool Config::LoadINI(std::string fileName)
     // Log loglevel name
     switch (m_LogLevel)
     {
-    case 0:
+    case spdlog::level::trace:
         SKSE::log::info("Log Level: Trace");
         break;
-    case 1:
+    case spdlog::level::debug:
         SKSE::log::info("Log Level: Debug");
         break;
-    case 2:
+    case spdlog::level::info:
         SKSE::log::info("Log Level: Info");
         break;
-    case 3:
+    case spdlog::level::warn:
         SKSE::log::info("Log Level: Warn");
         break;
     default:

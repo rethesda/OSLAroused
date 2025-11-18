@@ -1,0 +1,191 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Important Instructions for Claude
+
+**DO NOT automatically attempt to build this project.** This is a Skyrim SKSE plugin that requires specific Windows development environment setup including:
+- Specific versions of Visual Studio, CMake, and vcpkg
+- Skyrim Special Edition installation with SKSE64
+- Papyrus Compiler from the Skyrim Creation Kit
+- Properly configured environment variables
+
+The user will manually build the project when needed. Focus on code analysis, suggestions, and modifications without triggering builds.
+
+## Project Overview
+
+OSLAroused is a high-performance arousal framework for Skyrim Special Edition that provides both native (OSL) and SexLab Aroused (SLA) compatibility modes. It's a SKSE64 plugin written in C++23 with Papyrus script components for in-game integration.
+
+## Build System
+
+### Prerequisites
+- CMake 3.21+
+- Visual Studio 2022 (MSVC)
+- Ninja build system
+- vcpkg package manager (with `VCPKG_ROOT` environment variable set)
+- Papyrus Compiler (for compiling .psc scripts)
+
+### Build Commands
+
+**Configure and build (Debug):**
+```bash
+cmake --preset build-debug-msvc
+cmake --build build/debug-msvc --preset debug-msvc
+```
+
+**Configure and build (Release):**
+```bash
+cmake --preset build-release-msvc
+cmake --build build/release-msvc --preset release-msvc
+```
+
+**Run tests:**
+```bash
+# All tests
+ctest --preset tests-all
+
+# Unit tests only (no Skyrim runtime required)
+ctest --preset tests-unit
+
+# Integration tests (Skyrim module at rest)
+ctest --preset tests-integration
+
+# End-to-end tests (requires running Skyrim engine)
+ctest --preset tests-e2e
+```
+
+**Compile Papyrus scripts:**
+- Debug: Use `Debug.ppj` with PapyrusCompiler
+- Release: Use `Release.ppj` with PapyrusCompiler
+
+### Build Configuration
+
+- Build output for plugins: `contrib/Distribution/PluginDebug/` or `contrib/Distribution/PluginRelease/`
+- Papyrus script output configured in `.ppj` files
+- Automatic deployment to Mod Organizer 2 directories via `SkyrimPluginTargets` environment variable
+
+## Code Architecture
+
+### Core Components
+
+#### 1. Arousal System (Dual-Mode Architecture)
+The plugin implements a strategy pattern with two interchangeable arousal calculation backends:
+
+- **IArousalSystem** (`src/Managers/ArousalSystem/IArousalSystem.h`): Abstract interface defining arousal system contract
+- **ArousalSystemOSL** (`src/Managers/ArousalSystem/ArousalSystemOSL.cpp`): Native OSL arousal calculation system
+- **ArousalSystemSLA** (`src/Managers/ArousalSystem/ArousalSystemSLA.cpp`): SexLab Aroused compatibility mode
+
+The active system can be switched at runtime and is persisted in save games. Key difference:
+- OSL mode: Direct arousal values with baseline + multiplier system
+- SLA mode: Maps OSL concepts to SLA's exposure/time rate system
+
+#### 2. ArousalManager (`src/Managers/ArousalManager.h`)
+Singleton manager that owns the active arousal system implementation. Provides:
+- `SetArousalSystem()`: Switches between OSL and SLA modes
+- `GetArousalSystem()`: Returns reference to active implementation
+- Exports C-style DLL functions (`GetArousalExt`, `SetArousalExt`, etc.) for external plugin integration
+
+#### 3. Persisted Data System (`src/PersistedData.h`)
+Template-based serialization system for SKSE cosave data:
+
+- **BaseData<T>**: Thread-safe base class template for persisted data types
+- **Specialized classes**: ArousalData, BaseLibidoData, ArousalMultiplierData, LastCheckTimeData, LastOrgasmTimeData, ArmorKeywordData, etc.
+- **Serialization**: Each data type has unique 4-character key (e.g., 'OSLA', 'OSLB') for cosave storage
+- **SettingsData**: Stores which arousal mode (OSL/SLA) was active when game was saved
+
+#### 4. Manager Layer
+- **ActorStateManager** (`src/Managers/ActorStateManager.cpp`): Tracks actor states relevant to arousal calculation
+- **SceneManager** (`src/Managers/SceneManager.cpp`): Handles sexual scene events and integration
+- **WorldChecks/Ticker**: Periodic arousal updates via `ArousalUpdateTicker` (started on kDataLoaded)
+
+#### 5. Papyrus Integration (`src/Papyrus/`)
+Native functions exposed to Papyrus scripts:
+- **PapyrusInterface**: Main arousal API functions
+- **PapyrusActor**: Actor-specific functions
+- **PapyrusConfig**: Configuration and settings
+- **Papyrus**: General utility functions
+
+#### 6. Integrations (`src/Integrations/`)
+- **DevicesIntegration**: Integration with Devious Devices framework for arousal effects from worn restraints
+- **ANDIntegration**: Integration with Advanced Nudity Detection mod for granular nudity states
+
+#### 7. Utilities (`src/Utilities/`)
+- **LRUCache.h**: Template-based Least Recently Used cache implementation
+- **Ticker.h**: Periodic task execution system
+- **Utils**: General utility functions (Factions, Keywords, etc.)
+
+### Initialization Flow (src/Main.cpp)
+
+1. **InitializeLogging**: Sets up spdlog with MSVC debugger or file output
+2. **InitializeSerialization**: Registers cosave callbacks with SKSE
+3. **InitializePapyrus**: Registers native Papyrus functions
+4. **InitializeMessaging**: Registers for SKSE messaging events:
+   - `kDataLoaded`: Start arousal ticker, load INI config, initialize factions
+   - `kNewGame`: Reset to OSL mode
+   - `kPostLoadGame`: Distribute persisted keywords, restore saved arousal mode
+
+### Key Data Flow
+
+1. Arousal values stored per-actor using FormID in PersistedData singletons
+2. Arousal updates triggered by:
+   - Periodic ticker (WorldChecks::ArousalUpdateTicker)
+   - Equipment events (RuntimeEvents::OnEquipEvent)
+   - Scene events (via SceneManager)
+   - Direct Papyrus/C++ API calls
+3. Mode switching preserves data by mapping between OSL/SLA concepts or resetting if requested
+4. All data thread-safe via recursive mutex locks in BaseData<T>
+
+### Distribution Structure
+
+- `contrib/Distribution/Assets/`: ESM/ESP files, translations, config files
+- `contrib/Distribution/PapyrusSources/`: Source Papyrus scripts (.psc)
+- `contrib/Distribution/Patches/`: Compatibility patches for other mods (e.g., Devious Devices)
+- `contrib/Distribution/fomod/`: FOMOD installer configuration
+
+### Testing
+
+Tests located in `test/` directory. Example: `test_LRUCache.cpp` tests the LRU cache utility. Tests use Catch2 framework and are enabled with `-DBUILD_TESTS=ON` CMake option.
+
+### Advanced Nudity Detection (A.N.D.) Integration
+
+The plugin integrates with the Advanced Nudity Detection mod to provide more granular nudity tracking:
+
+#### Architecture
+- **ANDIntegration** (`src/Integrations/ANDIntegration.h/cpp`): Singleton class managing A.N.D. communication
+- **Faction-Based System**: Uses 8 A.N.D. factions to track different nudity states:
+  - Nude (index 0): Full nudity - baseline 50
+  - Topless (index 1): Upper body exposed - baseline 20
+  - Bottomless (index 2): Lower body exposed - baseline 30
+  - ShowingChest (index 3): Partial chest exposure - baseline 12
+  - ShowingAss (index 4): Partial rear exposure - baseline 8
+  - ShowingGenitals (index 5): Partial front exposure - baseline 15
+  - ShowingBra (index 6): Wearing only bra - baseline 8
+  - ShowingUnderwear (index 7): Wearing only underwear - baseline 8
+
+#### Key Features
+- **Priority System**: Higher-priority states override lower ones (e.g., Topless overrides ShowingChest)
+- **Synergy Bonus**: Topless + Bottomless (without full Nude) gives special score of 37
+- **Configurable Baselines**: All faction baselines configurable via INI and MCM
+- **Graceful Fallback**: Reverts to simple nudity detection if A.N.D. not installed
+- **Cache Invalidation**: Uses ModEvent "OSLA_ANDUpdate" to invalidate cache when nudity changes
+
+#### Configuration
+- INI Section: `[ANDIntegration]` in OSLAroused.ini
+- Enable/disable via `UseANDIntegration` setting
+- Individual faction baselines configurable (0-100 range with validation)
+- Constants defined in `src/Integrations/ANDFactionIndices.h`
+
+#### API Functions
+- `GetANDNudityScore(Actor)`: Returns nudity score (0-50)
+- `GetANDFactionContributions(Actor)`: Returns 8-element array of faction contributions
+- `SetANDFactionBaseline(index, value)`: Configure faction baseline with validation
+- `IsANDIntegrationEnabled()`: Check if A.N.D. is available and enabled
+
+## Important Notes
+
+- The plugin supports running without sexlab.esm (see commit e5d0414)
+- Arousal mode is loaded from persisted data on game load (not from INI)
+- FormID resolution during load uses SKSE's ResolveFormID for cross-save compatibility
+- The project uses CommonLibSSE-NG for SKSE plugin development
+- PCH (Precompiled Header) is in `src/PCH.h`
+- A.N.D. integration requires "Advanced Nudity Detection.esp" in load order

@@ -130,7 +130,7 @@ void WorldChecks::ArousalUpdateLoop()
 			continue;
 		}
 		auto actor = actorPtr.get();
-		if (!actor) {
+		if (!actor || !actorStateManager->IsHumanoidActor(actor)) {
 			continue;
 		}
 
