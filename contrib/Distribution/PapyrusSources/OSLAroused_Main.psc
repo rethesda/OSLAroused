@@ -99,34 +99,14 @@ Function OnGameLoaded()
 	RegisterForModEvent("AdvancedNudityDetectionUpdate", "OnANDNudityUpdated")
 	InitializeDeviceSettings()
 
-	; Bootstrap settings
-	; Need to notify skse dll whether to check for player nudity
-	OSLArousedNativeConfig.SetMinLibidoValue(true, MinLibidoValuePlayer)
-	OSLArousedNativeConfig.SetMinLibidoValue(false, MinLibidoValueNPC)
-	OSLArousedNativeConfig.SetArousalChangeRate(ArousalChangeRate)
-	OSLArousedNativeConfig.SetLibidoChangeRate(LibidoChangeRate)
-	OSLArousedNativeConfig.SetSceneParticipantBaseline(SceneParticipationBaselineIncrease)
-	OSLArousedNativeConfig.SetSceneViewingBaseline(SceneViewingBaselineIncrease)
-	OSLArousedNativeConfig.SetSceneVictimGainsArousal(VictimGainsArousal)
-	OSLArousedNativeConfig.SetBeingNudeBaseline(NudityBaselineIncrease)
-	OSLArousedNativeConfig.SetViewingNudeBaseline(ViewingNudityBaselineIncrease)
-	OSLArousedNativeConfig.SetEroticArmorBaseline(EroticArmorBaselineIncrease, OSLAroused_MCM.Get().EroticArmorKeyword)
-
-	OSLArousedNativeConfig.SetDeviceTypesBaseline1(DeviceBaselineModifications[0], DeviceBaselineModifications[1], DeviceBaselineModifications[2], DeviceBaselineModifications[3], DeviceBaselineModifications[4], DeviceBaselineModifications[5], DeviceBaselineModifications[6], DeviceBaselineModifications[7], DeviceBaselineModifications[8], DeviceBaselineModifications[9])
-	OSLArousedNativeConfig.SetDeviceTypesBaseline2(DeviceBaselineModifications[10], DeviceBaselineModifications[11], DeviceBaselineModifications[12], DeviceBaselineModifications[13], DeviceBaselineModifications[14], DeviceBaselineModifications[15], DeviceBaselineModifications[16], DeviceBaselineModifications[17], DeviceBaselineModifications[18])
-
-	OSLArousedNativeConfig.SetSLADefaultExposureRate(SLADefaultExposureRate)
-	OSLArousedNativeConfig.SetSLATimeRateHalfLife(SLATimeRateHalfLife)
-
-	Utility.Wait(0.5) ;Wait a bit to ensure other mods have loaded
-
 	SlaStubLoaded = false
 	OArousedStubLoaded = false
 	InvalidSlaFound = false
 	InvalidOArousedFound = false
 	SlaFrameworkStub = none
     if (Game.GetModByName("SexLabAroused.esm") != 255)
-		SlaFrameworkStub = Game.GetFormFromFile(0x4290F, "SexLabAroused.esm") as slaFrameworkScr
+		Quest slaQuest = Game.GetFormFromFile(0x4290F, "SexLabAroused.esm") as Quest
+		SlaFrameworkStub = slaQuest as slaFrameworkScr
 		if(SlaFrameworkStub && SlaFrameworkStub.GetVersion() == 20140124 && SlaFrameworkStub.IsOSLArousedStub)
 			SlaStubLoaded = true
 			SlaFrameworkStub.OnGameLoaded()
@@ -154,6 +134,24 @@ Function OnGameLoaded()
 	Log("SexLab IntegrationStatus: " + SexLabAdapterLoaded)
 
 	OSLAroused_MCM.Get().OnGameLoaded()
+	; Bootstrap settings
+	; Need to notify skse dll whether to check for player nudity
+	OSLArousedNativeConfig.SetMinLibidoValue(true, MinLibidoValuePlayer)
+	OSLArousedNativeConfig.SetMinLibidoValue(false, MinLibidoValueNPC)
+	OSLArousedNativeConfig.SetArousalChangeRate(ArousalChangeRate)
+	OSLArousedNativeConfig.SetLibidoChangeRate(LibidoChangeRate)
+	OSLArousedNativeConfig.SetSceneParticipantBaseline(SceneParticipationBaselineIncrease)
+	OSLArousedNativeConfig.SetSceneViewingBaseline(SceneViewingBaselineIncrease)
+	OSLArousedNativeConfig.SetSceneVictimGainsArousal(VictimGainsArousal)
+	OSLArousedNativeConfig.SetBeingNudeBaseline(NudityBaselineIncrease)
+	OSLArousedNativeConfig.SetViewingNudeBaseline(ViewingNudityBaselineIncrease)
+
+	OSLArousedNativeConfig.SetEroticArmorBaseline(EroticArmorBaselineIncrease, OSLAroused_MCM.Get().EroticArmorKeyword)
+	OSLArousedNativeConfig.SetDeviceTypesBaseline1(DeviceBaselineModifications[0], DeviceBaselineModifications[1], DeviceBaselineModifications[2], DeviceBaselineModifications[3], DeviceBaselineModifications[4], DeviceBaselineModifications[5], DeviceBaselineModifications[6], DeviceBaselineModifications[7], DeviceBaselineModifications[8], DeviceBaselineModifications[9])
+	OSLArousedNativeConfig.SetDeviceTypesBaseline2(DeviceBaselineModifications[10], DeviceBaselineModifications[11], DeviceBaselineModifications[12], DeviceBaselineModifications[13], DeviceBaselineModifications[14], DeviceBaselineModifications[15], DeviceBaselineModifications[16], DeviceBaselineModifications[17], DeviceBaselineModifications[18])
+
+	OSLArousedNativeConfig.SetSLADefaultExposureRate(SLADefaultExposureRate)
+	OSLArousedNativeConfig.SetSLATimeRateHalfLife(SLATimeRateHalfLife)
 
 	RegisterForKey(CheckArousalKey)
 	RegisterForKey(ToggleArousalBarKey)
