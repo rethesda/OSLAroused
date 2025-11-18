@@ -54,6 +54,13 @@ bool Config::LoadINI(std::string fileName)
     // Get the log level from the System section
     const char *logLevelStr = ini.GetValue("System", "LogLevel", "0");
     m_LogLevel = std::stoi(logLevelStr);
+
+    // Set the log level BEFORE logging the level name to ensure consistent output
+    auto logLevel = static_cast<spdlog::level::level_enum>(m_LogLevel);
+    spdlog::set_level(logLevel);  // Global level
+    spdlog::default_logger()->set_level(logLevel);  // Default logger
+    spdlog::default_logger()->flush_on(logLevel);  // Flush at or above this level
+
     // Log loglevel name
     switch (m_LogLevel)
     {
@@ -73,7 +80,6 @@ bool Config::LoadINI(std::string fileName)
         SKSE::log::info("Log Level: Error");
         break;
     }
-    spdlog::default_logger()->set_level(static_cast<spdlog::level::level_enum>(m_LogLevel));
 
     SKSE::log::info("Trying to Register {} Keywords", keywords.size());
     // Iterate and log each section name
