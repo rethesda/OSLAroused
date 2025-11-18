@@ -161,6 +161,12 @@ void ArousalSystemOSL::ActorLibidoModifiersUpdated(RE::Actor* actorRef)
 	m_LibidoModifierCache.PurgeItem(actorRef);
 }
 
+void ArousalSystemOSL::ClearAllLibidoModifiers()
+{
+	logger::debug("OSL: Clearing all libido modifier caches (settings changed)");
+	m_LibidoModifierCache.ClearAll();
+}
+
 float ArousalSystemOSL::UpdateActorLibido(RE::Actor* actorRef, float gameHoursPassed, float targetLibido)
 {
     //Move base libido towards targetlibido

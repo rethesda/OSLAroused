@@ -63,6 +63,14 @@ namespace Utilities
 			}
 		}
 
+		//Clear entire cache - all items will be recalculated on next fetch
+		void ClearAll()
+		{
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			m_CacheKeyTracker.clear();
+			m_CacheData.clear();
+		}
+
 	private:
 		void AddToCache(const KeyType& key, const ValType& val)
 		{

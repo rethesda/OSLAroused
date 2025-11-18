@@ -2,6 +2,7 @@
 #include "Settings.h"
 #include <Utilities/Utils.h>
 #include "Managers/ArousalManager.h"
+#include "Managers/ArousalSystem/ArousalSystemOSL.h"
 #include "PersistedData.h"
 #include "Integrations/ANDIntegration.h"
 
@@ -27,12 +28,22 @@ void PapyrusConfig::SetSceneParticipantBaseline(RE::StaticFunctionTag*, float ne
 {
 	logger::trace("SetSceneParticipantBaseline: {}", newVal);
 	Settings::GetSingleton()->SetSceneParticipantBaseline(newVal);
+
+	// Clear cache when scene baseline changes
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 void PapyrusConfig::SetSceneViewingBaseline(RE::StaticFunctionTag*, float newVal)
 {
 	logger::trace("SetSceneViewingBaseline: {}", newVal);
 	Settings::GetSingleton()->SetSceneViewingBaseline(newVal);
+
+	// Clear cache when scene baseline changes
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 void PapyrusConfig::SetSceneVictimGainsArousal(RE::StaticFunctionTag*, bool newVal)
@@ -45,12 +56,22 @@ void PapyrusConfig::SetBeingNudeBaseline(RE::StaticFunctionTag*, float newVal)
 {
 	logger::trace("SetBeingNudeBaseline: {}", newVal);
 	Settings::GetSingleton()->SetNudeArousalBaseline(newVal);
+
+	// Clear cache when nude baseline changes
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 void PapyrusConfig::SetViewingNudeBaseline(RE::StaticFunctionTag*, float newVal)
 {
 	logger::trace("SetViewingNudeBaseline: {}", newVal);
 	Settings::GetSingleton()->SetNudeViewingBaseline(newVal);
+
+	// Clear cache when nude viewing baseline changes
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 void PapyrusConfig::SetEroticArmorBaseline(RE::StaticFunctionTag*, float newVal, RE::BGSKeyword* keyword)
@@ -88,6 +109,12 @@ void PapyrusConfig::SetANDFactionBaseline(RE::StaticFunctionTag*, int factionInd
 {
 	logger::trace("SetANDFactionBaseline: index={}, value={}", factionIndex, value);
 	Settings::GetSingleton()->SetANDFactionBaseline(factionIndex, value);
+
+	// Clear libido modifier cache for OSL mode when A.N.D. baselines change
+	// This ensures all actors recalculate their baselines with the new settings
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
 }
 
 float PapyrusConfig::GetANDFactionBaseline(RE::StaticFunctionTag*, int factionIndex)
