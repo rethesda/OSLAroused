@@ -318,7 +318,8 @@ namespace Integrations
                 float synergy = (baselines.Topless + baselines.Bottomless) * 0.74f;
 
                 // Distribute proportionally
-                float toplessRatio = baselines.Topless / (baselines.Topless + baselines.Bottomless);
+                float sum = baselines.Topless + baselines.Bottomless;
+                float toplessRatio = (sum > 0.0f) ? (baselines.Topless / sum) : 0.5f;
                 toplessContrib = synergy * toplessRatio;
                 bottomlessContrib = synergy * (1.0f - toplessRatio);
 
