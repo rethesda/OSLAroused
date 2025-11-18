@@ -103,13 +103,19 @@ if(BUILD_TESTS)
     add_executable(
             ${PROJECT_NAME}Tests
             ${headers}
+            ${sources}
             ${tests})
 
     target_link_libraries(
             ${PROJECT_NAME}Tests
             PRIVATE
-            ${PROJECT_NAME}
+            CommonLibSSE::CommonLibSSE
             Catch2::Catch2WithMain)
+
+    target_include_directories(${PROJECT_NAME}Tests
+            PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>)
 
     target_precompile_headers(${PROJECT_NAME}Tests
             PRIVATE

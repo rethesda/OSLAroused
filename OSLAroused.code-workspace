@@ -10,7 +10,9 @@
         "papyrus.skyrim.enabled": false,
         "files.associations": {
             "utility": "cpp",
-            "iomanip": "cpp"
+            "iomanip": "cpp",
+            "xtree": "cpp",
+            "list": "cpp"
         }
     }
 }
