@@ -31,7 +31,7 @@ public:
     bool SaveANDFactionBaseline(int index, float value);
 
 private:
-    bool LoadINI(std::string filename);
+    bool LoadINI(std::string filename, bool useDefaults);
     bool m_ConfigLoaded = false;
 
     std::vector<KeywordEntry> m_RegisteredKeywordEditorIds;

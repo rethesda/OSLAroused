@@ -7,7 +7,7 @@
 
 void Config::LoadINIs()
 {
-    if (LoadINI("Data/SKSE/Plugins/OSLAroused.ini"))
+    if (LoadINI("Data/SKSE/Plugins/OSLAroused.ini", true))
     {
         m_ConfigLoaded = true;
     }
@@ -18,11 +18,11 @@ void Config::LoadINIs()
         return;
     }
 
-    // Load Custom INI
-    LoadINI("Data/SKSE/Plugins/OSLAroused_Custom.ini");
+    // Load Custom INI - only override values that are explicitly present
+    LoadINI("Data/SKSE/Plugins/OSLAroused_Custom.ini", false);
 }
 
-bool Config::LoadINI(std::string fileName)
+bool Config::LoadINI(std::string fileName, bool useDefaults)
 {
     CSimpleIniA ini(false, true, false);
     SI_Error rc = ini.LoadFile(fileName.c_str());
@@ -31,54 +31,76 @@ bool Config::LoadINI(std::string fileName)
         return false;
     }
 
+    // Helper lambda to load float values from INI
+    auto loadFloat = [&](const char* section, const char* key, float defaultVal, float& target) {
+        const char* str = ini.GetValue(section, key, nullptr);
+        if (str != nullptr) {
+            target = static_cast<float>(std::stod(str));
+        } else if (useDefaults) {
+            target = defaultVal;
+        }
+    };
+
+    // Helper lambda to load bool values from INI
+    auto loadBool = [&](const char* section, const char* key, bool defaultVal, auto setter) {
+        const char* str = ini.GetValue(section, key, nullptr);
+        if (str != nullptr) {
+            setter(std::stoi(str) != 0);
+        } else if (useDefaults) {
+            setter(defaultVal);
+        }
+    };
+
     // Get a list of keywords in Keyword Section
     CSimpleIniA::TNamesDepend keywords;
     ini.GetAllValues("RegisteredKeywords", "KeywordEditorId", keywords);
 
     // Get A.N.D. Integration settings
-    const char *useANDStr = ini.GetValue("ANDIntegration", "UseANDIntegration", "1");
-    Settings::GetSingleton()->SetUseANDIntegration(std::stoi(useANDStr) != 0);
+    loadBool("ANDIntegration", "UseANDIntegration", true,
+        [](bool val) { Settings::GetSingleton()->SetUseANDIntegration(val); });
 
     // Load A.N.D. faction baseline values
-    Settings::ANDFactionBaselines baselines;
-    baselines.Nude = static_cast<float>(ini.GetDoubleValue("ANDIntegration", "NudeBaseline", 50.0));
-    baselines.Topless = static_cast<float>(ini.GetDoubleValue("ANDIntegration", "ToplessBaseline", 20.0));
-    baselines.Bottomless = static_cast<float>(ini.GetDoubleValue("ANDIntegration", "BottomlessBaseline", 30.0));
-    baselines.ShowingChest = static_cast<float>(ini.GetDoubleValue("ANDIntegration", "ShowingChestBaseline", 12.0));
-    baselines.ShowingAss = static_cast<float>(ini.GetDoubleValue("ANDIntegration", "ShowingAssBaseline", 8.0));
-    baselines.ShowingGenitals = static_cast<float>(ini.GetDoubleValue("ANDIntegration", "ShowingGenitalsBaseline", 15.0));
-    baselines.ShowingBra = static_cast<float>(ini.GetDoubleValue("ANDIntegration", "ShowingBraBaseline", 8.0));
-    baselines.ShowingUnderwear = static_cast<float>(ini.GetDoubleValue("ANDIntegration", "ShowingUnderwearBaseline", 8.0));
+    Settings::ANDFactionBaselines baselines = Settings::GetSingleton()->GetANDFactionBaselines();
+    loadFloat("ANDIntegration", "NudeBaseline", 50.0f, baselines.Nude);
+    loadFloat("ANDIntegration", "ToplessBaseline", 20.0f, baselines.Topless);
+    loadFloat("ANDIntegration", "BottomlessBaseline", 30.0f, baselines.Bottomless);
+    loadFloat("ANDIntegration", "ShowingChestBaseline", 12.0f, baselines.ShowingChest);
+    loadFloat("ANDIntegration", "ShowingAssBaseline", 8.0f, baselines.ShowingAss);
+    loadFloat("ANDIntegration", "ShowingGenitalsBaseline", 15.0f, baselines.ShowingGenitals);
+    loadFloat("ANDIntegration", "ShowingBraBaseline", 8.0f, baselines.ShowingBra);
+    loadFloat("ANDIntegration", "ShowingUnderwearBaseline", 8.0f, baselines.ShowingUnderwear);
     Settings::GetSingleton()->SetANDFactionBaselines(baselines);
 
     // Get the log level from the System section
-    const char *logLevelStr = ini.GetValue("System", "LogLevel", "0");
-    m_LogLevel = std::stoi(logLevelStr);
+    const char *logLevelStr = ini.GetValue("System", "LogLevel", useDefaults ? "1" : nullptr);
+    if (logLevelStr != nullptr) {
+        m_LogLevel = std::stoi(logLevelStr);
 
-    // Set the log level BEFORE logging the level name to ensure consistent output
-    auto logLevel = static_cast<spdlog::level::level_enum>(m_LogLevel);
-    spdlog::set_level(logLevel);  // Global level
-    spdlog::default_logger()->set_level(logLevel);  // Default logger
-    spdlog::default_logger()->flush_on(logLevel);  // Flush at or above this level
+        // Set the log level BEFORE logging the level name to ensure consistent output
+        auto logLevel = static_cast<spdlog::level::level_enum>(m_LogLevel);
+        spdlog::set_level(logLevel);  // Global level
+        spdlog::default_logger()->set_level(logLevel);  // Default logger
+        spdlog::default_logger()->flush_on(logLevel);  // Flush at or above this level
 
-    // Log loglevel name
-    switch (m_LogLevel)
-    {
-    case spdlog::level::trace:
-        SKSE::log::info("Log Level: Trace");
-        break;
-    case spdlog::level::debug:
-        SKSE::log::info("Log Level: Debug");
-        break;
-    case spdlog::level::info:
-        SKSE::log::info("Log Level: Info");
-        break;
-    case spdlog::level::warn:
-        SKSE::log::info("Log Level: Warn");
-        break;
-    default:
-        SKSE::log::info("Log Level: Error");
-        break;
+        // Log loglevel name
+        switch (m_LogLevel)
+        {
+        case spdlog::level::trace:
+            SKSE::log::info("Log Level: Trace");
+            break;
+        case spdlog::level::debug:
+            SKSE::log::info("Log Level: Debug");
+            break;
+        case spdlog::level::info:
+            SKSE::log::info("Log Level: Info");
+            break;
+        case spdlog::level::warn:
+            SKSE::log::info("Log Level: Warn");
+            break;
+        default:
+            SKSE::log::info("Log Level: Error");
+            break;
+        }
     }
 
     SKSE::log::info("Trying to Register {} Keywords", keywords.size());
