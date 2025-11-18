@@ -118,7 +118,7 @@ void ActorStateManager::UpdateActorsSpectating(std::map<RE::Actor*, float> spect
 		m_NakedSpectatingMap[spectator] = data;
 
 		// Invalidate cache if new spectator or if nudity score changed significantly (>5 points)
-		if (isNewSpectator || std::abs(maxNudityScore - oldScore) > 5.0f) {
+		if (isNewSpectator || std::abs(maxNudityScore - oldScore) > 3.0f) {
 			if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
 				oslSystem->ActorLibidoModifiersUpdated(spectator);
 			}
