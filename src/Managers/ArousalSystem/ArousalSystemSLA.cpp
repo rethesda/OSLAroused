@@ -31,6 +31,14 @@ float ArousalSystemSLA::GetArousal(RE::Actor* actorRef, bool bUpdateState)
 		return 0;
 	}
 
+	if (Utilities::Actor::IsDead(actorRef))
+	{
+		if (bUpdateState) {
+			Papyrus::Events::SendActorArousalUpdatedEvent(actorRef, 0.0f);
+		}
+		return 0.0f;
+	}
+
 	//If locked, get the last faction rank (which is the last retrieved value)
 	if (ActorStateManager::GetActorArousalLocked(actorRef))
 	{
@@ -59,7 +67,9 @@ float ArousalSystemSLA::GetArousal(RE::Actor* actorRef, bool bUpdateState)
 //SetArousal is actually "SetExposure" (since arousal is calculated)
 float ArousalSystemSLA::SetArousal(RE::Actor* actorRef, float value, bool bSendEvent)
 {
-	if(!actorRef) { return 0.f; }
+	if (!actorRef || actorRef->IsChild() || Utilities::Actor::IsDead(actorRef)) {
+		return 0.0f;
+	}
 
 	value = std::clamp(value, 0.0f, 100.f);
 	//TODO: Update Faction Rank
@@ -78,7 +88,9 @@ float ArousalSystemSLA::SetArousal(RE::Actor* actorRef, float value, bool bSendE
 //Arousal = Exposure
 float ArousalSystemSLA::ModifyArousal(RE::Actor* actorRef, float value, bool bSendEvent)
 {
-	if(!actorRef) { return 0.f; }
+	if (!actorRef || actorRef->IsChild() || Utilities::Actor::IsDead(actorRef)) {
+		return 0.0f;
+	}
 
 	//TODO: If arousal Locked, abort
 
@@ -102,6 +114,10 @@ float ArousalSystemSLA::GetExposure(RE::Actor* actorRef)
 
 	if (actorRef->IsChild()) {
 		return 0;
+	}
+
+	if (Utilities::Actor::IsDead(actorRef)) {
+		return 0.0f;
 	}
 
 	float exposure = ArousalData::GetSingleton()->GetData(actorRef->formID, -2.f);
@@ -244,6 +260,7 @@ void ArousalSystemSLA::HandleSpectatingNaked(RE::Actor* actorRef, RE::Actor* nak
 {
 	if(!actorRef) { return; }
 	if(!nakedRef) { return; }
+	if (Utilities::Actor::IsDead(actorRef) || Utilities::Actor::IsDead(nakedRef)) { return; }
 
 	//When spectating a naked actor, SLA logic is to create an exposure event
 

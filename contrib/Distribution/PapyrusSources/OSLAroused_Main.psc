@@ -284,6 +284,9 @@ EndEvent
 function UpdateSOSPosition(Actor act, float arousal)
 	if(act == none || !EnableSOSIntegration)
 		return
+	elseif(act.IsDead())
+		Debug.SendAnimationEvent(act, "SOSFlaccid")
+		return
 	elseif(OSLArousedNative.IsInScene(act))
 		return
 	endif

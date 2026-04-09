@@ -39,6 +39,13 @@ float ArousalSystemOSL::GetArousal(RE::Actor* actorRef, bool bUpdateState)
     if (!actorRef || actorRef->IsChild()) {
         return 0.f;
     }
+
+    if (Utilities::Actor::IsDead(actorRef)) {
+        if (bUpdateState) {
+            Papyrus::Events::SendActorArousalUpdatedEvent(actorRef, 0.0f);
+        }
+        return 0.0f;
+    }
     
     //If locked, get the stored arousal value (which shouldnt be updated)
     if (ActorStateManager::GetActorArousalLocked(actorRef))
@@ -73,6 +80,10 @@ float ArousalSystemOSL::GetArousal(RE::Actor* actorRef, bool bUpdateState)
 
 float ArousalSystemOSL::SetArousal(RE::Actor* actorRef, float value, bool bSendEvent)
 {
+	if (!actorRef || actorRef->IsChild() || Utilities::Actor::IsDead(actorRef)) {
+		return 0.0f;
+	}
+
 	if (ActorStateManager::GetActorArousalLocked(actorRef))
 	{
 		return ArousalData::GetSingleton()->GetData(actorRef->formID, 0.f);
@@ -94,6 +105,10 @@ float ArousalSystemOSL::SetArousal(RE::Actor* actorRef, float value, bool bSendE
 
 float ArousalSystemOSL::ModifyArousal(RE::Actor* actorRef, float value, bool bSendEvent)
 {
+	if (!actorRef || actorRef->IsChild() || Utilities::Actor::IsDead(actorRef)) {
+		return 0.0f;
+	}
+
 	float multiplier = PersistedData::ArousalMultiplierData::GetSingleton()->GetData(actorRef->formID, 1.f);
 	logger::trace("[{}] - ModifyArousal: {} * {} = {}", actorRef->GetDisplayFullName(), value, multiplier, value * multiplier);
     value *= multiplier;

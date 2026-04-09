@@ -134,6 +134,10 @@ void WorldChecks::ArousalUpdateLoop()
 			continue;
 		}
 
+		if (Utilities::Actor::IsDead(actor)) {
+			continue;
+		}
+
 		// Check if actor is naked or partially nude
 		bool isNakedOrPartiallyNude = false;
 		float nudityScore = 0.0f;
@@ -240,7 +244,7 @@ std::vector<RE::Actor*> GetNearbySpectatingActors(RE::Actor* source, float radiu
     Utilities::World::ForEachReferenceInRange(source, radius, [&](RE::TESObjectREFR& ref) {
 		auto refBase = ref.GetBaseObject();
 		auto actor = ref.As<RE::Actor>();
-		if (actor && actor != source && !actor->IsDisabled() && !actor->IsChild() && (ref.Is(RE::FormType::NPC) || (refBase && refBase->Is(RE::FormType::NPC)))) {
+		if (actor && actor != source && !actor->IsDisabled() && !actor->IsChild() && !Utilities::Actor::IsDead(actor) && (ref.Is(RE::FormType::NPC) || (refBase && refBase->Is(RE::FormType::NPC)))) {
 			//If Actor is super close or detects the source, increase arousal
 			if (sourceLocation.GetSquaredDistance(ref.GetPosition()) < forceDetectDistance || (actor->RequestDetectionLevel(source, RE::DETECTION_PRIORITY::kNormal) > 0) || actor->IsPlayer()) {
 				nearbyActors.push_back(actor);
