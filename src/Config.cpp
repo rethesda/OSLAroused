@@ -31,9 +31,19 @@ bool Config::LoadINI(std::string fileName, bool useDefaults)
         return false;
     }
 
+    auto getLatestValue = [&](const char* section, const char* key) -> const char* {
+        CSimpleIniA::TNamesDepend values;
+        if (!ini.GetAllValues(section, key, values) || values.empty()) {
+            return nullptr;
+        }
+
+        values.sort(CSimpleIniA::Entry::LoadOrder());
+        return values.back().pItem;
+    };
+
     // Helper lambda to load float values from INI
     auto loadFloat = [&](const char* section, const char* key, float defaultVal, float& target) {
-        const char* str = ini.GetValue(section, key, nullptr);
+        const char* str = getLatestValue(section, key);
         if (str != nullptr) {
             target = static_cast<float>(std::stod(str));
         } else if (useDefaults) {
@@ -43,7 +53,7 @@ bool Config::LoadINI(std::string fileName, bool useDefaults)
 
     // Helper lambda to load bool values from INI
     auto loadBool = [&](const char* section, const char* key, bool defaultVal, auto setter) {
-        const char* str = ini.GetValue(section, key, nullptr);
+        const char* str = getLatestValue(section, key);
         if (str != nullptr) {
             setter(std::stoi(str) != 0);
         } else if (useDefaults) {
@@ -72,7 +82,10 @@ bool Config::LoadINI(std::string fileName, bool useDefaults)
     Settings::GetSingleton()->SetANDFactionBaselines(baselines);
 
     // Get the log level from the System section
-    const char *logLevelStr = ini.GetValue("System", "LogLevel", useDefaults ? "1" : nullptr);
+    const char *logLevelStr = getLatestValue("System", "LogLevel");
+    if (logLevelStr == nullptr && useDefaults) {
+        logLevelStr = "1";
+    }
     if (logLevelStr != nullptr) {
         m_LogLevel = std::stoi(logLevelStr);
 
@@ -182,7 +195,7 @@ bool Config::SaveANDFactionBaseline(int index, float value)
     char valueStr[32];
     snprintf(valueStr, sizeof(valueStr), "%.1f", value);
 
-    SI_Error rc = ini.SetValue("ANDIntegration", keyName, valueStr);
+    SI_Error rc = ini.SetValue("ANDIntegration", keyName, valueStr, nullptr, true);
     if (rc < 0) {
         SKSE::log::error("SaveANDFactionBaseline: Failed to set value in INI. Error: {}", rc);
         return false;
