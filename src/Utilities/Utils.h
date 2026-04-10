@@ -78,10 +78,7 @@ namespace Utilities
 			return actorRef && actorRef->IsDead();
 		}
 
-		inline bool IsNaked(RE::Actor* actorRef)
-		{
-			return actorRef->GetWornArmor(RE::BGSBipedObjectForm::BipedObjectSlot::kBody) == nullptr;
-		}
+		bool IsNaked(RE::Actor* actorRef);
 
 		inline bool IsNakedCached(RE::Actor* actorRef)
 		{

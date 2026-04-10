@@ -1,6 +1,66 @@
 #include "PersistedData.h"
 #include "Utils.h"
 
+namespace
+{
+	RE::BGSKeyword* GetArmorCuirassKeyword()
+	{
+		static RE::BGSKeyword* keyword = nullptr;
+		if (!keyword) {
+			keyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>("ArmorCuirass");
+		}
+		return keyword;
+	}
+
+	bool HasArmorCuirassKeyword(RE::TESObjectARMO* armor)
+	{
+		if (!armor) {
+			return false;
+		}
+
+		const auto keywordForm = armor->As<RE::BGSKeywordForm>();
+		const auto cuirassKeyword = GetArmorCuirassKeyword();
+		if (!keywordForm || !cuirassKeyword || !keywordForm->keywords) {
+			return false;
+		}
+
+		for (uint32_t i = 0; i < keywordForm->numKeywords; i++) {
+			if (keywordForm->keywords[i] == cuirassKeyword) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	template <class Callback>
+	void ForEachWornArmor(RE::Actor* actorRef, Callback&& callback)
+	{
+		if (!actorRef) {
+			return;
+		}
+
+		const auto actorInventory = actorRef->GetInventory();
+		for (const auto& [item, invData] : actorInventory) {
+			if (!item || !item->IsArmor()) {
+				continue;
+			}
+
+			const auto& [count, entry] = invData;
+			if (count <= 0 || !entry || !entry->IsWorn()) {
+				continue;
+			}
+
+			auto* armor = item->As<RE::TESObjectARMO>();
+			if (!armor) {
+				continue;
+			}
+
+			callback(armor);
+		}
+	}
+}
+
 RE::FormID Utilities::Forms::ResolveFormId(uint32_t modIndex, RE::FormID rawFormId)
 {
 	if (modIndex < 0xFF) {
@@ -137,46 +197,48 @@ void Utilities::Keywords::DistributeKeywords()
 	}
 }
 
-std::vector<RE::TESForm*> Utilities::Actor::GetWornArmor(RE::Actor* actorRef)
+bool Utilities::Actor::IsNaked(RE::Actor* actorRef)
 {
-	//Get Equipped items
-	const auto actorArmor = actorRef->GetInventory([=](RE::TESBoundObject& a_object) {
-		return a_object.IsArmor();
+	if (!actorRef) {
+		return true;
+	}
+
+	bool hasBodyArmor = false;
+	ForEachWornArmor(actorRef, [&](RE::TESObjectARMO* armor) {
+		if (armor->HasPartOf(RE::BGSBipedObjectForm::BipedObjectSlot::kBody) || HasArmorCuirassKeyword(armor)) {
+			hasBodyArmor = true;
+		}
 	});
 
+	return !hasBodyArmor;
+}
+
+std::vector<RE::TESForm*> Utilities::Actor::GetWornArmor(RE::Actor* actorRef)
+{
 	std::vector<RE::TESForm*> wornArmorForms;
-	//Get Set of Worn Armor
-	for (const auto& [item, invData] : actorArmor) {
-		const auto& [count, entry] = invData;
-		if (count > 0 && entry->IsWorn()) {
-			wornArmorForms.push_back(item);
-		}
-	}
+	ForEachWornArmor(actorRef, [&](RE::TESObjectARMO* armor) {
+		wornArmorForms.push_back(armor);
+	});
 
 	return wornArmorForms;
 }
 
 std::set<RE::FormID> Utilities::Actor::GetWornArmorKeywords(RE::Actor* actorRef, RE::TESForm* armorToIgnore)
 {
-	//Get Equipped items
-	const auto actorEquipment = actorRef->GetInventory([=](RE::TESBoundObject& a_object) {
-		return a_object.IsArmor();
-	});
-
-	//Get set of  keywords for worn items
 	std::set<RE::FormID> wornArmorKeywordIds;
-	for (const auto& [item, invData] : actorEquipment) {
-		const auto& [count, entry] = invData;
-		if (count > 0 && entry->IsWorn() && (!armorToIgnore || item->formID != armorToIgnore->formID)) {
-			if (const auto keywordForm = item->As<RE::BGSKeywordForm>()) {
-				for (uint32_t i = 0; i < keywordForm->numKeywords; i++) {
-					if (keywordForm->keywords[i]) {
-						wornArmorKeywordIds.insert(keywordForm->keywords[i]->formID);
-					}
+	ForEachWornArmor(actorRef, [&](RE::TESObjectARMO* armor) {
+		if (armorToIgnore && armor->formID == armorToIgnore->formID) {
+			return;
+		}
+
+		if (const auto keywordForm = armor->As<RE::BGSKeywordForm>(); keywordForm && keywordForm->keywords) {
+			for (uint32_t i = 0; i < keywordForm->numKeywords; i++) {
+				if (keywordForm->keywords[i]) {
+					wornArmorKeywordIds.insert(keywordForm->keywords[i]->formID);
 				}
 			}
 		}
-	}
+	});
 	return wornArmorKeywordIds;
 }
 

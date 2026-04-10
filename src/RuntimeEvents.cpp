@@ -40,7 +40,7 @@ RE::BSEventNotifyControl RuntimeEvents::OnEquipEvent::ProcessEvent(const RE::TES
 			if (armor->HasPartOf(RE::BGSBipedObjectForm::BipedObjectSlot::kBody)) {
 				//This is body armor so send Change of naked state based on if equipped or not
 				ActorStateManager::GetSingleton()->ActorNakedStateChanged(static_cast<RE::Actor*>(equipEvent->actor.get()), !equipEvent->equipped);
-			} else if (const auto keywordForm = armor->As<RE::BGSKeywordForm>()) {
+			} else if (const auto keywordForm = armor->As<RE::BGSKeywordForm>(); keywordForm && keywordForm->keywords) {
 				//Check for ArmorCuirass keyword as a backup
 				for (uint32_t i = 0; i < keywordForm->numKeywords; i++) {
 					if (keywordForm->keywords[i] && keywordForm->keywords[i]->formEditorID == "ArmorCuirass") {
