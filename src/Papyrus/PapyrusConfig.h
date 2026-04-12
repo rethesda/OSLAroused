@@ -14,6 +14,7 @@ namespace PapyrusConfig
 	void SetViewingNudeBaseline(RE::StaticFunctionTag* base, float newVal);
 
 	void SetEroticArmorBaseline(RE::StaticFunctionTag* base, float newVal, RE::BGSKeyword* keyword);
+	float GetEroticArmorBaseline(RE::StaticFunctionTag* base, RE::BGSKeyword* keyword);
 
 	// A.N.D. Integration functions
 	void SetUseANDIntegration(RE::StaticFunctionTag* base, bool enabled);

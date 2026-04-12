@@ -5,8 +5,19 @@
 
 #include <RE/T/TESForm.h>
 
+namespace
+{
+    constexpr auto kCustomIniPath = "Data/SKSE/Plugins/OSLAroused_Custom.ini";
+    constexpr auto kKeywordSection = "RegisteredKeywords";
+    constexpr auto kKeywordKey = "KeywordEditorId";
+    constexpr auto kKeywordBaselineSection = "KeywordBaselines";
+}
+
 void Config::LoadINIs()
 {
+    m_RegisteredKeywordEditorIds.clear();
+    Settings::GetSingleton()->ClearEroticArmorBaselines();
+
     if (LoadINI("Data/SKSE/Plugins/OSLAroused.ini", true))
     {
         m_ConfigLoaded = true;
@@ -63,7 +74,7 @@ bool Config::LoadINI(std::string fileName, bool useDefaults)
 
     // Get a list of keywords in Keyword Section
     CSimpleIniA::TNamesDepend keywords;
-    ini.GetAllValues("RegisteredKeywords", "KeywordEditorId", keywords);
+    ini.GetAllValues(kKeywordSection, kKeywordKey, keywords);
 
     // Get A.N.D. Integration settings
     loadBool("ANDIntegration", "UseANDIntegration", true,
@@ -124,12 +135,22 @@ bool Config::LoadINI(std::string fileName, bool useDefaults)
         auto keywordForm = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(keyword.pItem);
         if (keywordForm != nullptr)
         {
-            m_RegisteredKeywordEditorIds.emplace_back(keywordForm->formID, keyword.pItem);
+            if (!IsKeywordRegistered(keywordForm->formID)) {
+                m_RegisteredKeywordEditorIds.emplace_back(keywordForm->formID, keyword.pItem);
+            }
         }
         else
         {
             SKSE::log::warn("Keyword: {} failed to register. Failed to find Keyword Form.", keyword.pItem);
         }
+    }
+
+    for (const auto& keywordEntry : m_RegisteredKeywordEditorIds)
+    {
+        float baseline = Settings::GetSingleton()->GetEroticArmorBaseline(keywordEntry.FormId);
+        const float defaultBaseline = keywordEntry.EditorId == "EroticArmor" ? 20.0f : 0.0f;
+        loadFloat(kKeywordBaselineSection, keywordEntry.EditorId.c_str(), defaultBaseline, baseline);
+        Settings::GetSingleton()->SetEroticArmorBaseline(baseline, keywordEntry.FormId);
     }
 
     return true;
@@ -143,29 +164,65 @@ bool Config::RegisterKeyword(std::string keywordEditorId)
         SKSE::log::error("RegisterKeyword: Failed to find keyword form.");
         return false;
     }
+
+    if (IsKeywordRegistered(keywordForm->formID))
+    {
+        return true;
+    }
+
     m_RegisteredKeywordEditorIds.emplace_back(keywordForm->formID, keywordEditorId);
 
     CSimpleIniA ini(false, true, false);
-    SI_Error rc = ini.LoadFile("Data/SKSE/Plugins/OSLAroused_Custom.ini");
+    SI_Error rc = ini.LoadFile(kCustomIniPath);
     if (rc < 0)
     {
         // This is fine, just means the file doesnt exist yet
     }
 
-    rc = ini.SetValue("RegisteredKeywords", "KeywordEditorId", keywordEditorId.c_str());
+    rc = ini.SetValue(kKeywordSection, kKeywordKey, keywordEditorId.c_str());
     if (rc < 0)
     {
         SKSE::log::error("RegisterKeyword: Failed to set value in INI file. Error: {}", rc);
         return false;
     }
 
-    rc = ini.SaveFile("Data/SKSE/Plugins/OSLAroused_Custom.ini");
+    rc = ini.SaveFile(kCustomIniPath);
     if (rc < 0)
     {
         SKSE::log::error("RegisterKeyword: Failed to save INI file. Error: {}", rc);
         return false;
     }
 
+    return true;
+}
+
+bool Config::SaveKeywordBaseline(RE::FormID keywordFormId, float value)
+{
+    const auto* keywordEntry = FindRegisteredKeyword(keywordFormId);
+    if (!keywordEntry) {
+        SKSE::log::error("SaveKeywordBaseline: Keyword {:X} is not registered.", keywordFormId);
+        return false;
+    }
+
+    CSimpleIniA ini(false, true, false);
+    ini.LoadFile(kCustomIniPath);
+
+    char valueStr[32];
+    snprintf(valueStr, sizeof(valueStr), "%.1f", value);
+
+    SI_Error rc = ini.SetValue(kKeywordBaselineSection, keywordEntry->EditorId.c_str(), valueStr, nullptr, true);
+    if (rc < 0) {
+        SKSE::log::error("SaveKeywordBaseline: Failed to set value in INI. Error: {}", rc);
+        return false;
+    }
+
+    rc = ini.SaveFile(kCustomIniPath);
+    if (rc < 0) {
+        SKSE::log::error("SaveKeywordBaseline: Failed to save INI file. Error: {}", rc);
+        return false;
+    }
+
+    SKSE::log::debug("SaveKeywordBaseline: Saved {}={} to INI", keywordEntry->EditorId, value);
     return true;
 }
 
@@ -209,4 +266,21 @@ bool Config::SaveANDFactionBaseline(int index, float value)
 
     SKSE::log::debug("SaveANDFactionBaseline: Saved {}={} to INI", keyName, value);
     return true;
+}
+
+bool Config::IsKeywordRegistered(RE::FormID keywordFormId) const
+{
+    return FindRegisteredKeyword(keywordFormId) != nullptr;
+}
+
+const Config::KeywordEntry* Config::FindRegisteredKeyword(RE::FormID keywordFormId) const
+{
+    const auto it = std::find_if(
+        m_RegisteredKeywordEditorIds.begin(),
+        m_RegisteredKeywordEditorIds.end(),
+        [keywordFormId](const KeywordEntry& keyword) {
+            return keyword.FormId == keywordFormId;
+        });
+
+    return it != m_RegisteredKeywordEditorIds.end() ? &(*it) : nullptr;
 }

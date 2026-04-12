@@ -1,4 +1,5 @@
 #include "PapyrusConfig.h"
+#include "Config.h"
 #include "Settings.h"
 #include <Utilities/Utils.h>
 #include "Managers/ArousalManager.h"
@@ -83,6 +84,23 @@ void PapyrusConfig::SetEroticArmorBaseline(RE::StaticFunctionTag*, float newVal,
 	logger::trace("SetEroticArmorBaseline: {} {}", newVal, keyword->formID);
 
 	Settings::GetSingleton()->SetEroticArmorBaseline(newVal, keyword);
+	Config::GetSingleton()->SaveKeywordBaseline(keyword->formID, newVal);
+
+	if (auto* oslSystem = dynamic_cast<ArousalSystemOSL*>(&ArousalManager::GetSingleton()->GetArousalSystem())) {
+		oslSystem->ClearAllLibidoModifiers();
+	}
+}
+
+float PapyrusConfig::GetEroticArmorBaseline(RE::StaticFunctionTag*, RE::BGSKeyword* keyword)
+{
+	if (!keyword) {
+		Utilities::logInvalidArgsVerbose(__FUNCTION__);
+		return 0.0f;
+	}
+
+	const auto baseline = Settings::GetSingleton()->GetEroticArmorBaseline(keyword);
+	logger::trace("GetEroticArmorBaseline: {} {}", keyword->formID, baseline);
+	return baseline;
 }
 
 // A.N.D. Integration functions
@@ -279,6 +297,7 @@ bool PapyrusConfig::RegisterFunctions(RE::BSScript::IVirtualMachine* vm)
 	vm->RegisterFunction("SetViewingNudeBaseline", "OSLArousedNativeConfig", SetViewingNudeBaseline);
 
 	vm->RegisterFunction("SetEroticArmorBaseline", "OSLArousedNativeConfig", SetEroticArmorBaseline);
+	vm->RegisterFunction("GetEroticArmorBaseline", "OSLArousedNativeConfig", GetEroticArmorBaseline);
 
 	// Register A.N.D. Integration functions
 	vm->RegisterFunction("SetUseANDIntegration", "OSLArousedNativeConfig", SetUseANDIntegration);

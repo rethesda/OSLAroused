@@ -306,6 +306,20 @@ TEST_CASE("A.N.D. Integration - Settings Integration", "[and_integration]")
         REQUIRE(IsValidIndex(COUNT) == false);
         REQUIRE(IsValidIndex(100) == false);
     }
+
+    SECTION("Erotic armor keyword baselines sum across worn keywords")
+    {
+        settings->ClearEroticArmorBaselines();
+        settings->SetEroticArmorBaseline(20.0f, static_cast<RE::FormID>(0x100));
+        settings->SetEroticArmorBaseline(7.5f, static_cast<RE::FormID>(0x200));
+        settings->SetEroticArmorBaseline(0.0f, static_cast<RE::FormID>(0x300));
+
+        std::set<RE::FormID> wornKeywordIds{ 0x100, 0x200, 0x300, 0x400 };
+
+        REQUIRE(settings->GetEroticArmorBaseline(static_cast<RE::FormID>(0x100)) == Approx(20.0f));
+        REQUIRE(settings->GetEroticArmorBaseline(static_cast<RE::FormID>(0x300)) == Approx(0.0f));
+        REQUIRE(settings->GetEroticArmorBaselineForKeywords(wornKeywordIds) == Approx(27.5f));
+    }
 }
 
 TEST_CASE("A.N.D. Integration - Combination Examples", "[and_integration][examples]")

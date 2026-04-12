@@ -24,8 +24,9 @@ function SetBeingNudeBaseline(float newVal) global native
 ;Sets Amount of Arousal Baseline to gain when near nude actor
 function SetViewingNudeBaseline(float newVal) global native
 
-;Sets amount of Arousal Baseline to gain when wearing erotic armor (and sends keyword to use)
+;Sets amount of Arousal Baseline to gain for a registered erotic armor keyword
 function SetEroticArmorBaseline(float newVal, Keyword eroticKeyword) global native
+float function GetEroticArmorBaseline(Keyword eroticKeyword) global native
 
 ;Sets amount of Arousal Baseline to gain for a given device type
 function SetDeviceTypesBaseline1(float belt, float collar, float legCuffs, float armCuffs, float bra, float gag, float piercingsNipple, float piercingsVaginal, float blindfold, float harness) global native

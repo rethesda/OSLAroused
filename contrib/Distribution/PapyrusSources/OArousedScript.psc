@@ -11,7 +11,7 @@ EndFunction
 
 Keyword Property EroticArmor
     Keyword Function Get()
-        Return OSLAroused_MCM.Get().EroticArmorKeyword
+        Return Keyword.GetKeyword("EroticArmor")
     EndFunction
 EndProperty
 

@@ -228,13 +228,10 @@ namespace Integrations
         }
 
         // Check for erotic armor as secondary fallback
-        if (IsActorWearingEroticArmorLegacy(actor)) {
-            // Get erotic armor baseline - Settings already has this functionality
-            float eroticBaseline = settings->GetEroticArmorBaseline();
-            if (eroticBaseline > 0.0f) {
-                logger::trace("Actor {} using erotic armor baseline: {}", actor->GetDisplayFullName(), eroticBaseline);
-                return eroticBaseline;
-            }
+        const float eroticBaseline = GetActorEroticArmorBaselineLegacy(actor);
+        if (eroticBaseline > 0.0f) {
+            logger::trace("Actor {} using erotic armor baseline: {}", actor->GetDisplayFullName(), eroticBaseline);
+            return eroticBaseline;
         }
 
         return 0.0f;
@@ -369,22 +366,17 @@ namespace Integrations
 
     bool ANDIntegration::IsActorWearingEroticArmorLegacy(RE::Actor* actor) const
     {
+        return GetActorEroticArmorBaselineLegacy(actor) > 0.0f;
+    }
+
+    float ANDIntegration::GetActorEroticArmorBaselineLegacy(RE::Actor* actor) const
+    {
         if (!actor) {
-            return false;
+            return 0.0f;
         }
 
-        // Check if actor is wearing any armor with erotic keywords
         const auto settings = Settings::GetSingleton();
-
-        const auto eroticKeyword = settings->GetEroticArmorKeyword();
-        if(!eroticKeyword) {
-            return false;  // No erotic armor keyword configured
-        }
         const auto wornArmorKeywords = Utilities::Actor::GetWornArmorKeywords(actor);
-        if(wornArmorKeywords.contains(eroticKeyword->formID)) {
-            return true;  // Direct match found
-        }
-
-        return false;
+        return settings->GetEroticArmorBaselineForKeywords(wornArmorKeywords);
     }
 }

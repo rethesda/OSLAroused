@@ -107,6 +107,7 @@ Keyword Property EroticArmorKeyword Auto
 Form[] RegisteredKeywords
 bool[] RegisteredKeywordStates
 int[] RegisteredKeywordOids
+int[] RegisteredKeywordBaselineOids
 
 int RegisterKeywordOid
 
@@ -185,6 +186,7 @@ Event OnGameLoaded()
     RegisteredKeywords = Utility.CreateFormArray(keywords.Length)
     RegisteredKeywordStates  = Utility.CreateBoolArray(keywords.Length)
     RegisteredKeywordOids = Utility.CreateIntArray(keywords.Length)
+    RegisteredKeywordBaselineOids = Utility.CreateIntArray(keywords.Length)
     int index = 0
     while(index < keywords.Length)
         Keyword kw = Keyword.GetKeyword(keywords[index])
@@ -311,12 +313,27 @@ function KeywordPage()
     AddHeaderOption("$OSL_KeywordManagement")
     RegisterKeywordOid = AddInputOption("$OSL_RegisterNewKeyword", "$OSL_Register", 0)
     ArmorListMenuOid = AddMenuOption("$OSL_LoadArmorList", "")
-    SetCursorPosition(1)
+    AddHeaderOption("Keyword Baselines")
     int index = 0
     while(index < RegisteredKeywords.Length)
         Keyword kw = RegisteredKeywords[index] as Keyword
+        if(kw)
+            RegisteredKeywordBaselineOids[index] = AddSliderOption(kw.GetString(), OSLArousedNativeConfig.GetEroticArmorBaseline(kw), "{1}")
+        else
+            RegisteredKeywordBaselineOids[index] = AddTextOption("<Missing Keyword>", "0", OPTION_FLAG_DISABLED)
+        endif
+        index += 1
+    endwhile
+    SetCursorPosition(1)
+    index = 0
+    while(index < RegisteredKeywords.Length)
+        Keyword kw = RegisteredKeywords[index] as Keyword
 
-        RegisteredKeywordOids[index] = AddToggleOption((RegisteredKeywords[index] as Keyword).GetString(), RegisteredKeywordStates[index], OPTION_FLAG_DISABLED)
+        if(kw)
+            RegisteredKeywordOids[index] = AddToggleOption(kw.GetString(), RegisteredKeywordStates[index], OPTION_FLAG_DISABLED)
+        else
+            RegisteredKeywordOids[index] = AddTextOption("<Missing Keyword>", "0", OPTION_FLAG_DISABLED)
+        endif
         index += 1
     endwhile
 endfunction
@@ -360,12 +377,7 @@ function SettingsRightColumn()
 
         ViewingNudeBaselineOid = AddSliderOption("$OSL_ViewingNude", Main.ViewingNudityBaselineIncrease, "{1}")
 
-        ; Erotic Armor also uses AND integration when enabled
-        if(andEnabled)
-            EroticArmorBaselineOid = AddTextOption("$OSL_EroticArmor", "$OSL_SeeIntegrationSettings", OPTION_FLAG_DISABLED)
-        else
-            EroticArmorBaselineOid = AddSliderOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease, "{1}")
-        endif
+        EroticArmorBaselineOid = AddTextOption("$OSL_EroticArmor", "See Keywords", OPTION_FLAG_DISABLED)
         AddHeaderOption("$OSL_DeviceGains")
         DeviceBaselineGainTypeOid = AddMenuOption("$OSL_DeviceType", "")
         DeviceBaselineGainValueOid = AddSliderOption("$OSL_SelectedTypeGain", 0)
@@ -446,16 +458,32 @@ function BaselineStatusPage()
 
     ; Check if AND integration is available and enabled
     bool andEnabled = OSLArousedNativeConfig.IsANDIntegrationEnabled()
-    if(!andEnabled)
+    float andScore = 0.0
+    if(andEnabled)
+        andScore = OSLArousedNative.GetANDNudityScore(PuppetActor)
+    endif
+
+    if(!andEnabled || andScore <= 0.0)
         ; Use legacy nudity detection if AND is not available or disabled
         if(OSLArousedNative.IsNaked(PuppetActor))
             AddTextOption("$OSL_Nude", Main.NudityBaselineIncrease)
         else
             AddTextOption("$OSL_Nude", "0")
         endif
-        if(OSLArousedNative.IsWearingEroticArmor(PuppetActor))
-            AddTextOption("$OSL_EroticArmor", Main.EroticArmorBaselineIncrease)
-        else
+
+        bool hasEroticContribution = false
+        int keywordIndex = 0
+        while(keywordIndex < RegisteredKeywords.Length)
+            Keyword kw = RegisteredKeywords[keywordIndex] as Keyword
+            float keywordBaseline = GetKeywordBaseline(kw)
+            if(kw && keywordBaseline > 0.0 && ActorWearsKeyword(PuppetActor, kw))
+                AddTextOption(kw.GetString(), keywordBaseline)
+                hasEroticContribution = true
+            endif
+            keywordIndex += 1
+        endwhile
+
+        if(!hasEroticContribution)
             AddTextOption("$OSL_EroticArmor", "0")
         endif
     endif
@@ -484,9 +512,6 @@ function BaselineStatusPage()
 
     SetCursorPosition(1)
     if(andEnabled)
-        ; Get AND nudity score for the actor
-        float andScore = OSLArousedNative.GetANDNudityScore(PuppetActor)
-
         ; Show AND nudity information
         AddHeaderOption("$OSL_AdvancedNudityDetection")
         AddTextOption("$OSL_TotalNudityContribution", andScore as int)
@@ -814,6 +839,15 @@ event OnOptionHighlight(int optionId)
     elseif(CurrentPage == "$OSL_Keywords")
         if(optionId == RegisterKeywordOid)
             SetInfoText("$OSL_InfoRegisterKeyword")
+        else
+            int index = 0
+            while(index < RegisteredKeywordBaselineOids.Length)
+                if(optionId == RegisteredKeywordBaselineOids[index])
+                    SetInfoText("$OSL_InfoErotic")
+                    index = RegisteredKeywordBaselineOids.Length
+                endif
+                index += 1
+            endwhile
         endif
     elseif(CurrentPage == "$OSL_Settings")
         if(optionId == MinLibidoPlayerOid)
@@ -982,6 +1016,21 @@ event OnOptionSliderOpen(int option)
             SetSliderDialogRange(0, 10)
             SetSliderDialogInterval(0.1)
         endif
+    ElseIf(CurrentPage == "$OSL_Keywords")
+        int keywordIndex = 0
+        while(keywordIndex < RegisteredKeywordBaselineOids.Length)
+            if(option == RegisteredKeywordBaselineOids[keywordIndex])
+                Keyword kw = RegisteredKeywords[keywordIndex] as Keyword
+                if(kw)
+                    SetSliderDialogStartValue(GetKeywordBaseline(kw))
+                    SetSliderDialogDefaultValue(GetKeywordDefaultBaseline(kw))
+                    SetSliderDialogRange(0, 50)
+                    SetSliderDialogInterval(1)
+                endif
+                keywordIndex = RegisteredKeywordBaselineOids.Length
+            endif
+            keywordIndex += 1
+        endwhile
     ElseIf(CurrentPage == "$OSL_UI")
         if(option == ArousalBarXOid)
             SetSliderDialogStartValue(Main.ArousalBar.X)
@@ -1036,10 +1085,6 @@ event OnOptionSliderOpen(int option)
             SetSliderDialogRange(0, 50)
         elseif(option == ViewingNudeBaselineOid)
             SetSliderDialogStartValue(Main.ViewingNudityBaselineIncrease)
-            SetSliderDialogDefaultValue(20)
-            SetSliderDialogRange(0, 50)
-        elseif(option == EroticArmorBaselineOid)
-            SetSliderDialogStartValue(Main.EroticArmorBaselineIncrease)
             SetSliderDialogDefaultValue(20)
             SetSliderDialogRange(0, 50)
         elseif(option == DeviceBaselineGainValueOid)
@@ -1133,6 +1178,23 @@ event OnOptionSliderAccept(int option, float value)
             OSLArousedNative.SetArousalMultiplier(PuppetActor, value)
             SetSliderOptionValue(SetArousalMultiplierOid, value, "{1}")
         endif
+    elseif(currentPage == "$OSL_Keywords")
+        int keywordIndex = 0
+        bool updatedKeywordBaseline = false
+        while((keywordIndex < RegisteredKeywordBaselineOids.Length) && !updatedKeywordBaseline)
+            if(option == RegisteredKeywordBaselineOids[keywordIndex])
+                Keyword kw = RegisteredKeywords[keywordIndex] as Keyword
+                if(kw)
+                    OSLArousedNativeConfig.SetEroticArmorBaseline(value, kw)
+                    if(kw.GetString() == "EroticArmor")
+                        Main.EroticArmorBaselineIncrease = value
+                    endif
+                    SetSliderOptionValue(RegisteredKeywordBaselineOids[keywordIndex], value, "{1}")
+                endif
+                updatedKeywordBaseline = true
+            endif
+            keywordIndex += 1
+        endwhile
     elseif(currentPage == "$OSL_UI")
         if(option == ArousalBarXOid)
             Main.ArousalBar.SetPosX(value)
@@ -1174,9 +1236,6 @@ event OnOptionSliderAccept(int option, float value)
         elseif(option == ViewingNudeBaselineOid)
             Main.SetViewingNudeBaseline(value)
             SetSliderOptionValue(ViewingNudeBaselineOid, value, "{1}")
-        elseif(option == EroticArmorBaselineOid)
-            Main.SetEroticArmorBaseline(value)
-            SetSliderOptionValue(EroticArmorBaselineOid, value, "{1}")
         elseif(option == DeviceBaselineGainValueOid)
             Main.SetDeviceTypeBaselineChange(SelectedDeviceTypeId, value)
             SetSliderOptionValue(DeviceBaselineGainValueOid, value)
@@ -1275,6 +1334,24 @@ event OnOptionDefault(int option)
             OSLArousedNative.SetActorExhibitionist(PuppetActor, false)
             SetToggleOptionValue(IsExhibitionistOid, false)
         endif
+    elseif(currentPage == "$OSL_Keywords")
+        int keywordIndex = 0
+        bool resetKeywordBaseline = false
+        while((keywordIndex < RegisteredKeywordBaselineOids.Length) && !resetKeywordBaseline)
+            if(option == RegisteredKeywordBaselineOids[keywordIndex])
+                Keyword kw = RegisteredKeywords[keywordIndex] as Keyword
+                if(kw)
+                    float defaultBaseline = GetKeywordDefaultBaseline(kw)
+                    OSLArousedNativeConfig.SetEroticArmorBaseline(defaultBaseline, kw)
+                    if(kw.GetString() == "EroticArmor")
+                        Main.EroticArmorBaselineIncrease = defaultBaseline
+                    endif
+                    SetSliderOptionValue(RegisteredKeywordBaselineOids[keywordIndex], defaultBaseline, "{1}")
+                endif
+                resetKeywordBaseline = true
+            endif
+            keywordIndex += 1
+        endwhile
     elseif(currentPage == "$OSL_UI")
         if(option == ArousalBarXOid)
             Main.ArousalBar.SetPosX(980)
@@ -1317,9 +1394,6 @@ event OnOptionDefault(int option)
         elseif(option == ViewingNudeBaselineOid)
             Main.SetViewingNudeBaseline(20)
             SetSliderOptionValue(ViewingNudeBaselineOid, 20, "{1}")
-        elseif(option == EroticArmorBaselineOid)
-            Main.SetEroticArmorBaseline(20)
-            SetSliderOptionValue(EroticArmorBaselineOid, 20, "{1}")
         elseif(option == SceneBeginArousalOid)
             Main.SceneBeginArousalGain = 10
             SetSliderOptionValue(SceneBeginArousalOid, 10, "{1}")
@@ -1426,6 +1500,40 @@ bool function CheckKeyword(Keyword armorKeyword, int oid)
     endif
 
     return keywordEnabled
+endfunction
+
+float function GetKeywordBaseline(Keyword armorKeyword)
+    if(!armorKeyword)
+        return 0.0
+    endif
+
+    return OSLArousedNativeConfig.GetEroticArmorBaseline(armorKeyword)
+endfunction
+
+float function GetKeywordDefaultBaseline(Keyword armorKeyword)
+    if(armorKeyword && armorKeyword.GetString() == "EroticArmor")
+        return 20.0
+    endif
+
+    return 0.0
+endfunction
+
+bool function ActorWearsKeyword(Actor actorRef, Keyword armorKeyword)
+    if(!actorRef || !armorKeyword)
+        return false
+    endif
+
+    Form[] equippedArmor = OSLArousedNativeActor.GetAllEquippedArmor(actorRef)
+    int index = 0
+    while(index < equippedArmor.Length)
+        Armor armorItem = equippedArmor[index] as Armor
+        if(armorItem && armorItem.HasKeyword(armorKeyword))
+            return true
+        endif
+        index += 1
+    endwhile
+
+    return false
 endfunction
 
 string[] function GetDeviceTypeNames()

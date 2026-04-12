@@ -210,10 +210,8 @@ bool PapyrusInterface::IsWearingEroticArmor(RE::StaticFunctionTag*, RE::Actor* a
         return 0;
     }
 	if (!Utilities::Actor::IsNakedCached(actorRef)) {
-		if (const auto eroticKeyword = Settings::GetSingleton()->GetEroticArmorKeyword()) {
-			const auto wornKeywords = Utilities::Actor::GetWornArmorKeywords(actorRef);
-			return wornKeywords.contains(eroticKeyword->formID);
-		}
+		const auto wornKeywords = Utilities::Actor::GetWornArmorKeywords(actorRef);
+		return Settings::GetSingleton()->GetEroticArmorBaselineForKeywords(wornKeywords) > 0.0f;
 	}
 	return false;
 }

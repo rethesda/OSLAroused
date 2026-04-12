@@ -113,6 +113,7 @@ namespace Integrations
          * @return true if wearing armor with erotic keywords
          */
         [[nodiscard]] bool IsActorWearingEroticArmorLegacy(RE::Actor *actor) const;
+        [[nodiscard]] float GetActorEroticArmorBaselineLegacy(RE::Actor *actor) const;
 
         /**
          * @brief Checks if the actor is nude (legacy)

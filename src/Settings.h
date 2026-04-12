@@ -1,6 +1,9 @@
 #pragma once
 #include "Integrations/ANDFactionIndices.h"
 
+#include <set>
+#include <unordered_map>
+
 using Lock = std::recursive_mutex;
 using Locker = std::lock_guard<Lock>;
 
@@ -179,21 +182,54 @@ public:
 
 	void SetEroticArmorBaseline(float newVal, RE::BGSKeyword* keyword)
 	{
-		Locker locker(m_Lock);
-		m_EroticArmorBaseline = newVal;
-		m_EroticArmorKeyword = keyword;
-	}
-	RE::BGSKeyword* GetEroticArmorKeyword() const
-	{
-		Locker locker(m_Lock);
-		return m_EroticArmorKeyword;
+		if (!keyword) {
+			return;
+		}
+		SetEroticArmorBaseline(newVal, keyword->formID);
 	}
 
-	// Extended method for getting erotic armor baseline by keyword FormID
-	float GetEroticArmorBaseline() const
+	void SetEroticArmorBaseline(float newVal, RE::FormID keywordFormId)
 	{
 		Locker locker(m_Lock);
-		return m_EroticArmorBaseline;
+		m_EroticArmorBaselines[keywordFormId] = newVal;
+	}
+
+	float GetEroticArmorBaseline(RE::BGSKeyword* keyword) const
+	{
+		return keyword ? GetEroticArmorBaseline(keyword->formID) : 0.0f;
+	}
+
+	float GetEroticArmorBaseline(RE::FormID keywordFormId) const
+	{
+		Locker locker(m_Lock);
+		if (const auto it = m_EroticArmorBaselines.find(keywordFormId); it != m_EroticArmorBaselines.end()) {
+			return it->second;
+		}
+		return 0.0f;
+	}
+
+	std::unordered_map<RE::FormID, float> GetEroticArmorBaselines() const
+	{
+		Locker locker(m_Lock);
+		return m_EroticArmorBaselines;
+	}
+
+	float GetEroticArmorBaselineForKeywords(const std::set<RE::FormID>& keywordFormIds) const
+	{
+		Locker locker(m_Lock);
+		float totalBaseline = 0.0f;
+		for (const auto keywordFormId : keywordFormIds) {
+			if (const auto it = m_EroticArmorBaselines.find(keywordFormId); it != m_EroticArmorBaselines.end()) {
+				totalBaseline += it->second;
+			}
+		}
+		return totalBaseline;
+	}
+
+	void ClearEroticArmorBaselines()
+	{
+		Locker locker(m_Lock);
+		m_EroticArmorBaselines.clear();
 	}
 
 	// A.N.D. Integration Settings
@@ -301,8 +337,7 @@ private:
 
 	DeviceArousalBaselineChange m_DeviceBaseline;
 
-	float m_EroticArmorBaseline = 20.f;
-	RE::BGSKeyword* m_EroticArmorKeyword = nullptr;
+	std::unordered_map<RE::FormID, float> m_EroticArmorBaselines;
 
 	// A.N.D. Integration settings
 	bool m_UseANDIntegration = true;  // Default true if A.N.D. is present

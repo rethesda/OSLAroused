@@ -145,8 +145,8 @@ Function OnGameLoaded()
 	OSLArousedNativeConfig.SetSceneVictimGainsArousal(VictimGainsArousal)
 	OSLArousedNativeConfig.SetBeingNudeBaseline(NudityBaselineIncrease)
 	OSLArousedNativeConfig.SetViewingNudeBaseline(ViewingNudityBaselineIncrease)
+	MigrateLegacyEroticArmorBaseline()
 
-	OSLArousedNativeConfig.SetEroticArmorBaseline(EroticArmorBaselineIncrease, OSLAroused_MCM.Get().EroticArmorKeyword)
 	OSLArousedNativeConfig.SetDeviceTypesBaseline1(DeviceBaselineModifications[0], DeviceBaselineModifications[1], DeviceBaselineModifications[2], DeviceBaselineModifications[3], DeviceBaselineModifications[4], DeviceBaselineModifications[5], DeviceBaselineModifications[6], DeviceBaselineModifications[7], DeviceBaselineModifications[8], DeviceBaselineModifications[9])
 	OSLArousedNativeConfig.SetDeviceTypesBaseline2(DeviceBaselineModifications[10], DeviceBaselineModifications[11], DeviceBaselineModifications[12], DeviceBaselineModifications[13], DeviceBaselineModifications[14], DeviceBaselineModifications[15], DeviceBaselineModifications[16], DeviceBaselineModifications[17], DeviceBaselineModifications[18])
 
@@ -231,14 +231,21 @@ function SetArousalEffectsEnabled(bool enabled)
 endfunction
 
 Function ApplyArousedEffects()
-	PlayerRef.RemoveSpell(SLADesireSpell)
-	PlayerRef.AddSpell(SLADesireSpell, false)
+	if(!PlayerRef.HasSpell(SLADesireSpell))
+		PlayerRef.AddSpell(SLADesireSpell, false)
+	endif
 EndFunction
 
 Function RemoveAllArousalSpells()
-	playerref.RemoveSpell(SLADesireSpell)
-	playerref.RemoveSpell(OArousedHornySpell)
-	playerref.RemoveSpell(OArousedRelievedSpell)
+	if(PlayerRef.HasSpell(SLADesireSpell))
+		PlayerRef.RemoveSpell(SLADesireSpell)
+	endif
+	if(PlayerRef.HasSpell(OArousedHornySpell))
+		PlayerRef.RemoveSpell(OArousedHornySpell)
+	endif
+	if(PlayerRef.HasSpell(OArousedRelievedSpell))
+		PlayerRef.RemoveSpell(OArousedRelievedSpell)
+	endif
 EndFunction
 
 Event OnKeyDown(int keyCode)
@@ -362,7 +369,25 @@ endfunction
 
 function SetEroticArmorBaseline(float newVal)
 	EroticArmorBaselineIncrease = newVal
-	OSLArousedNativeConfig.SetEroticArmorBaseline(newVal, OSLAroused_MCM.Get().EroticArmorKeyword)
+	Keyword eroticKeyword = Keyword.GetKeyword("EroticArmor")
+	if(eroticKeyword)
+		OSLArousedNativeConfig.SetEroticArmorBaseline(newVal, eroticKeyword)
+	endif
+endfunction
+
+function MigrateLegacyEroticArmorBaseline()
+	Keyword eroticKeyword = Keyword.GetKeyword("EroticArmor")
+	if(!eroticKeyword)
+		return
+	endif
+
+	float keywordBaseline = OSLArousedNativeConfig.GetEroticArmorBaseline(eroticKeyword)
+	if(keywordBaseline == 20.0 && EroticArmorBaselineIncrease != 20.0)
+		OSLArousedNativeConfig.SetEroticArmorBaseline(EroticArmorBaselineIncrease, eroticKeyword)
+		keywordBaseline = EroticArmorBaselineIncrease
+	endif
+
+	EroticArmorBaselineIncrease = keywordBaseline
 endfunction
 
 function SetDeviceTypeBaselineChange(int deviceTypeId, float newVal)
